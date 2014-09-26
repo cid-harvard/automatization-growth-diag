@@ -19,7 +19,7 @@ use "wdi2013.dta", clear
 	* COMPLEXITY
 	global complexity "C:\Users\Luis Miguel\Documents\Bases de Datos\CID - Harvard\complexity_y_c.dta"
 * COUNTRY TO BE ANALYZED
-local ctry PER
+local ctry ESP
 levelsof country if wbcode=="`ctry'", local(j) clean
 * RESULTS
 cd "C:\Users\Luis Miguel\Dropbox\CID\Automatization Growth Diagnostics\Results"

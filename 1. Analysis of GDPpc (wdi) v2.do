@@ -46,10 +46,10 @@ sort country year
 ** Figure 1: Overall, ten, and five year growth rates **
 ********************************************************
 rename NY_GDP_PCAP_KD gdppc
-gen loggdppc=log(gdppc)				/* GDP per capita (constant 2005 US$) */
+gen loggdppc=log10(gdppc)				/* GDP per capita (constant 2005 US$) */
 label var loggdppc "log(GDPPC)"
 rename NY_GDP_PCAP_PP_KD gdppc2		/* GDP per capita, PPP (constant 2005 international $) */
-gen loggdppc2=log(gdppc2)
+gen loggdppc2=log10(gdppc2)
 label var loggdppc2 "log(GDPPC)"
 label var year "Years"
 * Statistics for Figure 1
@@ -135,9 +135,9 @@ local sd: display %2.1f sd
 if `=maxyear'>=2010 {
 	if `=minyear5'<=1960 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
-		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log, log" "Data source:  World Development Indicators") /*
+		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1962.5 "`g_1960'") text(`=minloggdppc-0.2' 1967.5 "`g_1965'") text(`=minloggdppc-0.2' 1972.5 "`g_1970'") /*
 		*/ text(`=minloggdppc-0.2' 1977.5 "`g_1975'") text(`=minloggdppc-0.2' 1982.5 "`g_1980'") text(`=minloggdppc-0.2' 1987.5 "`g_1985'") /*
 		*/ text(`=minloggdppc-0.2' 1992.5 "`g_1990'") text(`=minloggdppc-0.2' 1997.5 "`g_1995'") text(`=minloggdppc-0.2' 2002.5 "`g_2000'") /*
@@ -150,7 +150,7 @@ if `=maxyear'>=2010 {
 	}
 	else if `=minyear5'>1960 & `=minyear5'<=1965 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1967.5 "`g_1965'") text(`=minloggdppc-0.2' 1972.5 "`g_1970'") text(`=minloggdppc-0.2' 1977.5 "`g_1975'") /*
@@ -164,7 +164,7 @@ if `=maxyear'>=2010 {
 	}
 	else if `=minyear5'>1965 & `=minyear5'<=1970 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1972.5 "`g_1970'") text(`=minloggdppc-0.2' 1977.5 "`g_1975'") text(`=minloggdppc-0.2' 1982.5 "`g_1980'") /*
@@ -177,7 +177,7 @@ if `=maxyear'>=2010 {
 	}
 	else if `=minyear5'>1970 & `=minyear5'<=1975 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1977.5 "`g_1975'") text(`=minloggdppc-0.2' 1982.5 "`g_1980'") text(`=minloggdppc-0.2' 1987.5 "`g_1985'") /*
@@ -190,7 +190,7 @@ if `=maxyear'>=2010 {
 	}
 	else if `=minyear5'>1975 & `=minyear5'<=1980 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1982.5 "`g_1980'") text(`=minloggdppc-0.2' 1987.5 "`g_1985'") text(`=minloggdppc-0.2' 1992.5 "`g_1990'") /*
@@ -202,7 +202,7 @@ if `=maxyear'>=2010 {
 	}
 	else if `=minyear5'>1980 & `=minyear5'<=1985 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1987.5 "`g_1985'") text(`=minloggdppc-0.2' 1992.5 "`g_1990'") text(`=minloggdppc-0.2' 1997.5 "`g_1995'") /*
@@ -213,7 +213,7 @@ if `=maxyear'>=2010 {
 	}
 	else if `=minyear5'>1985 & `=minyear5'<=1990 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1992.5 "`g_1990'") text(`=minloggdppc-0.2' 1997.5 "`g_1995'") text(`=minloggdppc-0.2' 2002.5 "`g_2000'") /*
@@ -224,7 +224,7 @@ if `=maxyear'>=2010 {
 	}
 		else if `=minyear5'>1990 & `=minyear5'<=1995 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1997.5 "`g_1995'") text(`=minloggdppc-0.2' 2002.5 "`g_2000'") text(`=minloggdppc-0.2' 2007.5 "`g_2005'") /*
@@ -234,7 +234,7 @@ if `=maxyear'>=2010 {
 	}
 		else if `=minyear5'>1995 & `=minyear5'<=2000 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators")  /*
 		*/ text(`=minloggdppc-0.2' 2002.5 "`g_2000'") text(`=minloggdppc-0.2' 2007.5 "`g_2005'") text(`=minloggdppc' `=maxyear-1' "`mingdppc'" "Min", j(right)) /*
@@ -244,7 +244,7 @@ if `=maxyear'>=2010 {
 	}
 		else if `=minyear5'>2000 & `=minyear5'<=2005 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 2007.5 "`g_2005'") text(`=minloggdppc' `=maxyear-1' "`mingdppc'" "Min", j(right)) /*
@@ -253,7 +253,7 @@ if `=maxyear'>=2010 {
 	}
 		else {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc' `=maxyear-1' "`mingdppc'" "Min", j(right)) text(`=medloggdppc' `=maxyear-1' "`medgdppc'" "Med", j(right)) /*
@@ -264,7 +264,7 @@ if `=maxyear'>=2010 {
 else {
 	if `=minyear5'<=1960 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1962.5 "`g_1960'") text(`=minloggdppc-0.2' 1967.5 "`g_1965'") text(`=minloggdppc-0.2' 1972.5 "`g_1970'") /*
@@ -278,7 +278,7 @@ else {
 	}
 	else if `=minyear5'>1960 & `=minyear5'<=1965 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1967.5 "`g_1965'") text(`=minloggdppc-0.2' 1972.5 "`g_1970'") text(`=minloggdppc-0.2' 1977.5 "`g_1975'") /*
@@ -291,7 +291,7 @@ else {
 	}
 	else if `=minyear5'>1965 & `=minyear5'<=1970 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1972.5 "`g_1970'") text(`=minloggdppc-0.2' 1977.5 "`g_1975'") text(`=minloggdppc-0.2' 1982.5 "`g_1980'") /*
@@ -304,7 +304,7 @@ else {
 	}
 	else if `=minyear5'>1970 & `=minyear5'<=1975 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1977.5 "`g_1975'") text(`=minloggdppc-0.2' 1982.5 "`g_1980'") text(`=minloggdppc-0.2' 1987.5 "`g_1985'") /*
@@ -316,7 +316,7 @@ else {
 	}
 	else if `=minyear5'>1975 & `=minyear5'<=1980 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1982.5 "`g_1980'") text(`=minloggdppc-0.2' 1987.5 "`g_1985'") text(`=minloggdppc-0.2' 1992.5 "`g_1990'") /*
@@ -327,7 +327,7 @@ else {
 	}
 	else if `=minyear5'>1980 & `=minyear5'<=1985 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1987.5 "`g_1985'") text(`=minloggdppc-0.2' 1992.5 "`g_1990'") text(`=minloggdppc-0.2' 1997.5 "`g_1995'") /*
@@ -338,7 +338,7 @@ else {
 	}
 	else if `=minyear5'>1985 & `=minyear5'<=1990 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1992.5 "`g_1990'") text(`=minloggdppc-0.2' 1997.5 "`g_1995'") text(`=minloggdppc-0.2' 2002.5 "`g_2000'") /*
@@ -348,7 +348,7 @@ else {
 	}
 		else if `=minyear5'>1990 & `=minyear5'<=1995 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 1997.5 "`g_1995'") text(`=minloggdppc-0.2' 2002.5 "`g_2000'") text(`=minloggdppc' `=maxyear' "`mingdppc'" "Min", j(right)) /*
@@ -357,7 +357,7 @@ else {
 	}
 		else if `=minyear5'>1995 & `=minyear5'<=2000 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc-0.2' 2002.5 "`g_2000'") text(`=minloggdppc' `=maxyear-1' "`mingdppc'" "Min", j(right)) /*
@@ -366,7 +366,7 @@ else {
 	}
 		else if `=minyear5'>2000 & `=minyear5'<=2005 {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc' `=maxyear-1.0' "`mingdppc'" "Min", j(right)) text(`=medloggdppc' `=maxyear-1.0' "`medgdppc'" "Med", j(right)) /*
@@ -375,7 +375,7 @@ else {
 	}
 		else {
 		twoway line loggdppc year if wbcode=="`ctry'" & year>=`=minyear5', xlabel(`=minyear5'(5)`=maxyear') xsc(range(`=minyear5'(5)`=maxyear')) /*
-		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle(log(GDPPC)) || /*
+		*/ ysc(range(`=minloggdppc-0.2'(0.2)`=maxloggdppc+0.6')) ylabel(#`rangeloggdppc') lwidth(medthick) ytitle("log(GDPPC)") || /*
 		*/ lfit loggdppc year if wbcode=="`ctry'", legend(off) lpattern(dash) lcolor(black) title("Overall, ten, and five year growth rates") /*
 		*/ subtitle("`j'") note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 		*/ text(`=minloggdppc' `=maxyear-1.0' "`mingdppc'" "Min", j(right)) text(`=medloggdppc' `=maxyear-1.0' "`medgdppc'" "Med", j(right)) /*
@@ -730,7 +730,7 @@ if `=number_milestones'==1 {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Deaccelerations") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'" "") /*
@@ -740,7 +740,7 @@ else if `=number_milestones'==2 {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Deaccelerations") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'" "") /*
@@ -751,7 +751,7 @@ else if `=number_milestones'==3 {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Collapses") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'") /*
@@ -763,7 +763,7 @@ else if `=number_milestones'==4 {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Collapses") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'" "") /*
@@ -776,7 +776,7 @@ else if `=number_milestones'==5 {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Collapses") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'" "") /*
@@ -790,7 +790,7 @@ else if `=number_milestones'==6 {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Collapses") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'" "") /*
@@ -805,7 +805,7 @@ else {
 	twoway line loggdppc year if wbcode=="`ctry'", lwidth(medthick) || /*
 	*/ spike max_loggdppc year if wbcode=="`ctry'" & milestone==1, lcolor(gs8) /*
 	*/ xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) /*
-	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle(log(GDPPC)) /*
+	*/ ysc(range(`=minloggdppc'(0.2)`=maxloggdppc')) ytitle("log(GDPPC)") /*
 	*/ legend(off) title("Growth Accelerations and Collapses") subtitle("`j'") /*
 	*/ note("Note: GDP per capita (constant 2005 US$), log" "Data source:  World Development Indicators") /*
 	*/ text(`=maxloggdppc' `=year1' "g{subscript:1}:`growth_1'" "")

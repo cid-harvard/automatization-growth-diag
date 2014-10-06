@@ -19,7 +19,7 @@ use "wdi2013.dta", clear
 	* COMPLEXITY
 	global complexity "C:\Users\Luis Miguel\Documents\Bases de Datos\CID - Harvard\complexity_y_c.dta"
 * COUNTRY TO BE ANALYZED
-local ctry ESP
+local ctry PER
 levelsof country if wbcode=="`ctry'", local(j) clean
 * RESULTS
 cd "C:\Users\Luis Miguel\Dropbox\CID\Automatization Growth Diagnostics\Results"
@@ -141,10 +141,10 @@ scalar region`ctry'=r(mean)
 
 * Renaming and labeling
 rename NY_GDP_PCAP_KD gdppc
-gen loggdppc=log(gdppc)
+gen loggdppc=log10(gdppc)
 label var loggdppc "Log(GDPPC)"
 rename NY_GDP_PCAP_PP_KD gdppc2
-gen loggdppc2=log(gdppc2)
+gen loggdppc2=log10(gdppc2)
 label var loggdppc "GDP per capita (constant 2005 US$), log"
 label var loggdppc2 "GDP per capita, PPP (constant 2005 international $), log"
 label var year "Years"
@@ -173,7 +173,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & urban_pop!=.
 	scalar maxyear1=r(max)
 	bys year: count if loggdppc2!=. & urban_pop!=.
-	if r(N)>=100 {
+	if r(N)>=30 {
 		keep if year==`=maxyear1'
 	}
 	continue, break
@@ -187,9 +187,9 @@ drop if year!=`=maxyear1'
 
 if `=maxyear1'!=. {
 	* Statistics for Figure 1
-	* Percentiles
+	* Deciles
 	foreach x in urban_pop loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -245,7 +245,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & agr_gdp!=.
 	scalar maxyear2=r(max)
 	bys year: count if loggdppc2!=. & agr_gdp!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear2'
 	}
 	continue, break
@@ -259,9 +259,9 @@ drop if year!=`=maxyear2'
 
 if `=maxyear2'!=. {
 	* Statistics for Figure 2
-	* Percentiles
+	* Deciles
 	foreach x in agr_gdp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -319,7 +319,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & mnf_gdp!=.
 	scalar maxyear3=r(max)
 	bys year: count if loggdppc2!=. & mnf_gdp!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear3'
 	}
 	continue, break
@@ -333,9 +333,9 @@ drop if year!=`=maxyear3'
 
 if `=maxyear3'!=. {
 	* Statistics for Figure 3
-	* Percentiles
+	* Deciles
 	foreach x in mnf_gdp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -393,7 +393,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & ind_gdp!=.
 	scalar maxyear4=r(max)
 	bys year: count if loggdppc2!=. & ind_gdp!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear4'
 	}
 	continue, break
@@ -407,9 +407,9 @@ drop if year!=`=maxyear4'
 
 if `=maxyear4'!=. {
 	* Statistics for Figure 4
-	* Percentiles
+	* Deciles
 	foreach x in ind_gdp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -467,7 +467,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & ss_gdp!=.
 	scalar maxyear5=r(max)
 	bys year: count if loggdppc2!=. & ss_gdp!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear5'
 	}
 	continue, break
@@ -481,9 +481,9 @@ drop if year!=`=maxyear4'
 
 if `=maxyear4'!=. {
 	* Statistics for Figure 4
-	* Percentiles
+	* Deciles
 	foreach x in ss_gdp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -541,7 +541,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & emp_agr!=.
 	scalar maxyear6=r(max)
 	bys year: count if loggdppc2!=. & emp_agr!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear6'
 	}
 	continue, break
@@ -555,9 +555,9 @@ drop if year!=`=maxyear6'
 
 if `=maxyear6'!=. {
 	* Statistics for Figure 6
-	* Percentiles
+	* Deciles
 	foreach x in emp_agr loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -615,7 +615,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & emp_ind!=.
 	scalar maxyear7=r(max)
 	bys year: count if loggdppc2!=. & emp_ind!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear7'
 	}
 	continue, break
@@ -629,9 +629,9 @@ drop if year!=`=maxyear7'
 
 if `=maxyear7'!=. {
 	* Statistics for Figure 7
-	* Percentiles
+	* Deciles
 	foreach x in emp_ind loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -689,7 +689,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & emp_ss!=.
 	scalar maxyear8=r(max)
 	bys year: count if loggdppc2!=. & emp_ss!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear8'
 	}
 	continue, break
@@ -703,9 +703,9 @@ drop if year!=`=maxyear8'
 
 if `=maxyear8'!=. {
 	* Statistics for Figure 8
-	* Percentiles
+	* Deciles
 	foreach x in emp_ss loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -758,7 +758,7 @@ restore
 ** PHYSICAL CAPITAL: ENERGY CONSUMPTION PER CAPITA **
 *****************************************************
 rename EG_USE_PCAP_KG_OE energypc
-gen logenergypc=log(energypc)
+gen logenergypc=log10(energypc)
 preserve
 
 * Maximum years
@@ -766,7 +766,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & logenergypc!=.
 	scalar maxyear9=r(max)
 	bys year: count if loggdppc2!=. & logenergypc!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear9'
 	}
 	continue, break
@@ -780,9 +780,9 @@ drop if year!=`=maxyear9'
 
 if `=maxyear9'!=. {
 	* Statistics for Figure 9
-	* Percentiles
+	* Deciles
 	foreach x in logenergypc loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -840,14 +840,14 @@ replace wbcode="ROM" if wbcode=="ROU"
 merge 1:1 wbcode year using "temp.dta"
 drop if _merge!=3
 drop _merge
-gen kpw=log(ck*1000000/SL_TLF_TOTL_IN)
+gen kpw=log10(ck*1000000/SL_TLF_TOTL_IN)
 
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & kpw!=.
 	scalar maxyear10=r(max)
 	bys year: count if loggdppc2!=. & kpw!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear10'
 	}
 	continue, break
@@ -861,9 +861,9 @@ drop if year!=`=maxyear10'
 
 if `=maxyear10'!=. {
 	* Statistics for Figure 10
-	* Percentiles
+	* Deciles
 	foreach x in kpw loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -924,7 +924,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & school!=.
 	scalar maxyear11=r(max)
 	bys year: count if loggdppc2!=. & school!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear11'
 	}
 	continue, break
@@ -938,9 +938,9 @@ drop if year!=`=maxyear11'
 
 if `=maxyear11'!=. {
 	* Statistics for Figure 11
-	* Percentiles
+	* Deciles
 	foreach x in school loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1000,7 +1000,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & prim!=.
 	scalar maxyear12=r(max)
 	bys year: count if loggdppc2!=. & prim!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear12'
 	}
 	continue, break
@@ -1014,9 +1014,9 @@ drop if year!=`=maxyear12'
 
 if `=maxyear12'!=. {
 	* Statistics for Figure 12
-	* Percentiles
+	* Deciles
 	foreach x in prim loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1076,7 +1076,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & sec!=.
 	scalar maxyear13=r(max)
 	bys year: count if loggdppc2!=. & sec!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear13'
 	}
 	continue, break
@@ -1090,9 +1090,9 @@ drop if year!=`=maxyear13'
 
 if `=maxyear13'!=. {
 	* Statistics for Figure 13
-	* Percentiles
+	* Deciles
 	foreach x in sec loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1152,7 +1152,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & univ!=.
 	scalar maxyear14=r(max)
 	bys year: count if loggdppc2!=. & univ!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear14'
 	}
 	continue, break
@@ -1166,9 +1166,9 @@ drop if year!=`=maxyear14'
 
 if `=maxyear14'!=. {
 	* Statistics for Figure 14
-	* Percentiles
+	* Deciles
 	foreach x in univ loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1225,7 +1225,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & journal!=.
 	scalar maxyear15=r(max)
 	bys year: count if loggdppc2!=. & journal!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear15'
 	}
 	continue, break
@@ -1239,9 +1239,9 @@ drop if year!=`=maxyear15'
 
 if `=maxyear15'!=. {
 	* Statistics for Figure 15
-	* Percentiles
+	* Deciles
 	foreach x in journal loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1298,7 +1298,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & research!=.
 	scalar maxyear16=r(max)
 	bys year: count if loggdppc2!=. & research!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear16'
 	}
 	continue, break
@@ -1312,9 +1312,9 @@ drop if year!=`=maxyear16'
 
 if `=maxyear16'!=. {
 	* Statistics for Figure 16
-	* Percentiles
+	* Deciles
 	foreach x in research loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1372,7 +1372,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & infant!=.
 	scalar maxyear17=r(max)
 	bys year: count if loggdppc2!=. & infant!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear17'
 	}
 	continue, break
@@ -1386,9 +1386,9 @@ drop if year!=`=maxyear17'
 
 if `=maxyear17'!=. {
 	* Statistics for Figure 17
-	* Percentiles
+	* Deciles
 	foreach x in infant loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1445,7 +1445,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & fertil!=.
 	scalar maxyear18=r(max)
 	bys year: count if loggdppc2!=. & fertil!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear18'
 	}
 	continue, break
@@ -1459,9 +1459,9 @@ drop if year!=`=maxyear18'
 
 if `=maxyear18'!=. {
 	* Statistics for Figure 18
-	* Percentiles
+	* Deciles
 	foreach x in fertil loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1518,7 +1518,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & life!=.
 	scalar maxyear19=r(max)
 	bys year: count if loggdppc2!=. & life!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear19'
 	}
 	continue, break
@@ -1532,9 +1532,9 @@ drop if year!=`=maxyear19'
 
 if `=maxyear19'!=. {
 	* Statistics for Figure 19
-	* Percentiles
+	* Deciles
 	foreach x in life loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1591,7 +1591,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & pop_g!=.
 	scalar maxyear20=r(max)
 	bys year: count if loggdppc2!=. & pop_g!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear20'
 	}
 	continue, break
@@ -1605,9 +1605,9 @@ drop if year!=`=maxyear20'
 
 if `=maxyear20'!=. {
 	* Statistics for Figure 20
-	* Percentiles
+	* Deciles
 	foreach x in pop_g loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1664,7 +1664,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & depend!=.
 	scalar maxyear21=r(max)
 	bys year: count if loggdppc2!=. & depend!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear21'
 	}
 	continue, break
@@ -1678,9 +1678,9 @@ drop if year!=`=maxyear21'
 
 if `=maxyear21'!=. {
 	* Statistics for Figure 21
-	* Percentiles
+	* Deciles
 	foreach x in depend loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1745,7 +1745,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & ctfp!=.
 	scalar maxyear22=r(max)
 	bys year: count if loggdppc2!=. & ctfp!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear22'
 	}
 	continue, break
@@ -1759,9 +1759,9 @@ drop if year!=`=maxyear22'
 
 if `=maxyear22'!=. {
 	* Statistics for Figure 22
-	* Percentiles
+	* Deciles
 	foreach x in ctfp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1834,7 +1834,7 @@ forval x=2012(-1)1980 {
 	summ year if loggdppc2!=. & tax_gdp!=.
 	scalar maxyear23=r(max)
 	bys year: count if loggdppc2!=. & tax_gdp!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear23'
 	}
 	continue, break
@@ -1848,9 +1848,9 @@ drop if year!=`=maxyear23'
 
 if `=maxyear23'!=. {
 	* Statistics for Figure 23
-	* Percentiles
+	* Deciles
 	foreach x in tax_gdp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -1907,7 +1907,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & open!=.
 	scalar maxyear24=r(max)
 	bys year: count if loggdppc2!=. & open!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear24'
 	}
 	continue, break
@@ -1921,9 +1921,9 @@ drop if year!=`=maxyear24'
 
 if `=maxyear24'!=. {
 	* Statistics for Figure 24
-	* Percentiles
+	* Deciles
 	foreach x in open loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2047,7 +2047,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & demo!=.
 	scalar maxyear25=r(max)
 	bys year: count if loggdppc2!=. & demo!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear25'
 	}
 	continue, break
@@ -2061,9 +2061,9 @@ drop if year!=`=maxyear25'
 
 if `=maxyear25'!=. {
 	* Statistics for Figure 25
-	* Percentiles
+	* Deciles
 	foreach x in demo loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2188,7 +2188,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & rule!=.
 	scalar maxyear26=r(max)
 	bys year: count if loggdppc2!=. & rule!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear26'
 	}
 	continue, break
@@ -2202,9 +2202,9 @@ drop if year!=`=maxyear26'
 
 if `=maxyear26'!=. {
 	* Statistics for Figure 26
-	* Percentiles
+	* Deciles
 	foreach x in rule loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2329,7 +2329,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & econ_freedom!=.
 	scalar maxyear27=r(max)
 	bys year: count if loggdppc2!=. & econ_freedom!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear27'
 	}
 	continue, break
@@ -2343,9 +2343,9 @@ drop if year!=`=maxyear27'
 
 if `=maxyear27'!=. {
 	* Statistics for Figure 27
-	* Percentiles
+	* Deciles
 	foreach x in econ_freedom loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2471,7 +2471,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & bus_freedom!=.
 	scalar maxyear28=r(max)
 	bys year: count if loggdppc2!=. & bus_freedom!=.
-	if r(N)<100 {
+	if r(N)<30 {
 		drop if year==`=maxyear28'
 	}
 	continue, break
@@ -2485,9 +2485,9 @@ drop if year!=`=maxyear28'
 
 if `=maxyear28'!=. {
 	* Statistics for Figure 28
-	* Percentiles
+	* Deciles
 	foreach x in bus_freedom loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2541,7 +2541,7 @@ restore
 ****************************************************************
 ** COMPOSITION OF EXPORTS: HIGH-TECHNOLOGY EXPORTS PER CAPITA **
 ****************************************************************
-gen tech_exp=log(TX_VAL_TECH_CD/SP_POP_TOTL)
+gen tech_exp=log10(TX_VAL_TECH_CD/SP_POP_TOTL)
 preserve
 
 * Maximum years
@@ -2549,7 +2549,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & tech_exp!=.
 	scalar maxyear29=r(max)
 	bys year: count if loggdppc2!=. & tech_exp!=.
-	if r(N)>=100 {
+	if r(N)>=30 {
 		keep if year==`=maxyear29'
 	}
 	continue, break
@@ -2563,9 +2563,9 @@ drop if year!=`=maxyear29'
 
 if `=maxyear29'!=. {
 	* Statistics for Figure 29
-	* Percentiles
+	* Deciles
 	foreach x in tech_exp loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2628,7 +2628,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & diversity_rca!=.
 	scalar maxyear30=r(max)
 	bys year: count if loggdppc2!=. & diversity_rca!=.
-	if r(N)>=100 {
+	if r(N)>=30 {
 		keep if year==`=maxyear30'
 	}
 	continue, break
@@ -2642,9 +2642,9 @@ drop if year!=`=maxyear30'
 
 if `=maxyear30'!=. {
 	* Statistics for Figure 30
-	* Percentiles
+	* Deciles
 	foreach x in diversity_rca loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2709,7 +2709,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & eci_rca!=.
 	scalar maxyear31=r(max)
 	bys year: count if loggdppc2!=. & eci_rca!=.
-	if r(N)>=100 {
+	if r(N)>=30 {
 		keep if year==`=maxyear31'
 	}
 	continue, break
@@ -2723,9 +2723,9 @@ drop if year!=`=maxyear31'
 
 if `=maxyear31'!=. {
 	* Statistics for Figure 31
-	* Percentiles
+	* Deciles
 	foreach x in eci_rca loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2790,7 +2790,7 @@ forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & coi_rca!=.
 	scalar maxyear32=r(max)
 	bys year: count if loggdppc2!=. & coi_rca!=.
-	if r(N)>=100 {
+	if r(N)>=30 {
 		keep if year==`=maxyear32'
 	}
 	continue, break
@@ -2804,9 +2804,9 @@ drop if year!=`=maxyear32'
 
 if `=maxyear32'!=. {
 	* Statistics for Figure 32
-	* Percentiles
+	* Deciles
 	foreach x in coi_rca loggdppc2 {
-		xtile pct=`x' if `x'!=., nq(100)
+		xtile pct=`x' if `x'!=., nq(10)
 		summ pct if wbcode=="`ctry'"
 		scalar pct_`x'=r(mean)
 		local pct_`x': display %9.1fc pct_`x'
@@ -2854,7 +2854,7 @@ restore
 ********************************************************************************************************************************************************
 
 ***************************************************
-** RANKINGS, PERCENTILES AND ERROR IN S.E. UNITS **
+** RANKINGS, DecileS AND ERROR IN S.E. UNITS **
 ***************************************************
 
 foreach var in urban_pop agr_gdp mnf_gdp ind_gdp ss_gdp emp_agr emp_ind emp_ss logenergypc kpw school prim sec univ journal research infant fertil life /*
@@ -2874,7 +2874,7 @@ collapse maxyear1 rank_urban_pop n_urban_pop pct_urban_pop diff_urban_pop
 rename maxyear1 year
 rename rank_urban_pop rank
 rename n_urban_pop n
-rename pct_urban_pop percentile
+rename pct_urban_pop decile
 rename diff_urban_pop deviation
 gen variable=1
 save "temp1.dta", replace
@@ -2885,7 +2885,7 @@ collapse maxyear2 rank_agr_gdp n_agr_gdp pct_agr_gdp diff_agr_gdp
 rename maxyear2 year
 rename rank_agr_gdp rank
 rename n_agr_gdp n
-rename pct_agr_gdp percentile
+rename pct_agr_gdp decile
 rename diff_agr_gdp deviation
 gen variable=2
 save "temp2.dta", replace
@@ -2896,7 +2896,7 @@ collapse maxyear3 rank_mnf_gdp n_mnf_gdp pct_mnf_gdp diff_mnf_gdp
 rename maxyear3 year
 rename rank_mnf_gdp rank
 rename n_mnf_gdp n
-rename pct_mnf_gdp percentile
+rename pct_mnf_gdp decile
 rename diff_mnf_gdp deviation
 gen variable=3
 save "temp3.dta", replace
@@ -2907,7 +2907,7 @@ collapse maxyear4 rank_ind_gdp n_ind_gdp pct_ind_gdp diff_ind_gdp
 rename maxyear4 year
 rename rank_ind_gdp rank
 rename n_ind_gdp n
-rename pct_ind_gdp percentile
+rename pct_ind_gdp decile
 rename diff_ind_gdp deviation
 gen variable=4
 save "temp4.dta", replace
@@ -2918,7 +2918,7 @@ collapse maxyear5 rank_ss_gdp n_ss_gdp pct_ss_gdp diff_ss_gdp
 rename maxyear5 year
 rename rank_ss_gdp rank
 rename n_ss_gdp n
-rename pct_ss_gdp percentile
+rename pct_ss_gdp decile
 rename diff_ss_gdp deviation
 gen variable=5
 save "temp5.dta", replace
@@ -2929,7 +2929,7 @@ collapse maxyear6 rank_emp_agr n_emp_agr pct_emp_agr diff_emp_agr
 rename maxyear6 year
 rename rank_emp_agr rank
 rename n_emp_agr n
-rename pct_emp_agr percentile
+rename pct_emp_agr decile
 rename diff_emp_agr deviation
 gen variable=6
 save "temp6.dta", replace
@@ -2940,7 +2940,7 @@ collapse maxyear7 rank_emp_ind n_emp_ind pct_emp_ind diff_emp_ind
 rename maxyear7 year
 rename rank_emp_ind rank
 rename n_emp_ind n
-rename pct_emp_ind percentile
+rename pct_emp_ind decile
 rename diff_emp_ind deviation
 gen variable=7
 save "temp7.dta", replace
@@ -2951,7 +2951,7 @@ collapse maxyear8 rank_emp_ss n_emp_ss pct_emp_ss diff_emp_ss
 rename maxyear8 year
 rename rank_emp_ss rank
 rename n_emp_s n
-rename pct_emp_ss percentile
+rename pct_emp_ss decile
 rename diff_emp_ss deviation
 gen variable=8
 save "temp8.dta", replace
@@ -2962,7 +2962,7 @@ collapse maxyear9 rank_logenergypc n_logenergypc pct_logenergypc diff_logenergyp
 rename maxyear9 year
 rename rank_logenergypc rank
 rename n_logenergypc n
-rename pct_logenergypc percentile
+rename pct_logenergypc decile
 rename diff_logenergypc deviation
 gen variable=9
 save "temp9.dta", replace
@@ -2973,7 +2973,7 @@ collapse maxyear10 rank_kpw n_kpw pct_kpw diff_kpw
 rename maxyear10 year
 rename rank_kpw rank
 rename n_kpw n
-rename pct_kpw percentile
+rename pct_kpw decile
 rename diff_kpw deviation
 gen variable=10
 save "temp10.dta", replace
@@ -2984,7 +2984,7 @@ collapse maxyear11 rank_school n_school pct_school diff_school
 rename maxyear11 year
 rename rank_school rank
 rename n_school n
-rename pct_school percentile
+rename pct_school decile
 rename diff_school deviation
 gen variable=11
 save "temp11.dta", replace
@@ -2995,7 +2995,7 @@ collapse maxyear12 rank_prim n_prim pct_prim diff_prim
 rename maxyear12 year
 rename rank_prim rank
 rename n_prim n
-rename pct_prim percentile
+rename pct_prim decile
 rename diff_prim deviation
 gen variable=12
 save "temp12.dta", replace
@@ -3006,7 +3006,7 @@ collapse maxyear13 rank_sec n_sec pct_sec diff_sec
 rename maxyear13 year
 rename rank_sec rank
 rename n_sec n
-rename pct_sec percentile
+rename pct_sec decile
 rename diff_sec deviation
 gen variable=13
 save "temp13.dta", replace
@@ -3017,7 +3017,7 @@ collapse maxyear14 rank_univ n_univ pct_univ diff_univ
 rename maxyear14 year
 rename rank_univ rank
 rename n_univ n
-rename pct_univ percentile
+rename pct_univ decile
 rename diff_univ deviation
 gen variable=14
 save "temp14.dta", replace
@@ -3028,7 +3028,7 @@ collapse maxyear15 rank_journal n_journal pct_journal diff_journal
 rename maxyear15 year
 rename rank_journal rank
 rename n_journal n
-rename pct_journal percentile
+rename pct_journal decile
 rename diff_journal deviation
 gen variable=15
 save "temp15.dta", replace
@@ -3040,7 +3040,7 @@ collapse maxyear16 rank_research n_research pct_research diff_research
 rename maxyear16 year
 rename rank_research rank
 rename n_research n
-rename pct_research percentile
+rename pct_research decile
 rename diff_research deviation
 gen variable=16
 save "temp16.dta", replace
@@ -3052,7 +3052,7 @@ collapse maxyear17 rank_infant n_infant pct_infant diff_infant
 rename maxyear17 year
 rename rank_infant rank
 rename n_infant n
-rename pct_infant percentile
+rename pct_infant decile
 rename diff_infant deviation
 gen variable=17
 save "temp17.dta", replace
@@ -3063,7 +3063,7 @@ collapse maxyear18 rank_fertil n_fertil pct_fertil diff_fertil
 rename maxyear18 year
 rename rank_fertil rank
 rename n_fertil n
-rename pct_fertil percentile
+rename pct_fertil decile
 rename diff_fertil deviation
 gen variable=18
 save "temp18.dta", replace
@@ -3074,7 +3074,7 @@ collapse maxyear19 rank_life n_life pct_life diff_life
 rename maxyear19 year
 rename rank_life rank
 rename n_life n
-rename pct_life percentile
+rename pct_life decile
 rename diff_life deviation
 gen variable=19
 save "temp19.dta", replace
@@ -3085,7 +3085,7 @@ collapse maxyear20 rank_pop_g n_pop_g pct_pop_g diff_pop_g
 rename maxyear20 year
 rename rank_pop_g rank
 rename n_pop_g n
-rename pct_pop_g percentile
+rename pct_pop_g decile
 rename diff_pop_g deviation
 gen variable=20
 save "temp20.dta", replace
@@ -3096,7 +3096,7 @@ collapse maxyear21 rank_depend n_depend pct_depend diff_depend
 rename maxyear21 year
 rename rank_depend rank
 rename n_depend n
-rename pct_depend percentile
+rename pct_depend decile
 rename diff_depend deviation
 gen variable=21
 save "temp21.dta", replace
@@ -3107,7 +3107,7 @@ collapse maxyear22 rank_ctfp n_ctfp pct_ctfp diff_ctfp
 rename maxyear22 year
 rename rank_ctfp rank
 rename n_ctfp n
-rename pct_ctfp percentile
+rename pct_ctfp decile
 rename diff_ctfp deviation
 gen variable=22
 save "temp22.dta", replace
@@ -3118,7 +3118,7 @@ collapse maxyear23 rank_tax_gdp n_tax_gdp pct_tax_gdp diff_tax_gdp
 rename maxyear23 year
 rename rank_tax_gdp rank
 rename n_tax_gdp n
-rename pct_tax_gdp percentile
+rename pct_tax_gdp decile
 rename diff_tax_gdp deviation
 gen variable=23
 save "temp23.dta", replace
@@ -3129,7 +3129,7 @@ collapse maxyear24 rank_open n_open pct_open diff_open
 rename maxyear24 year
 rename rank_open rank
 rename n_open n
-rename pct_open percentile
+rename pct_open decile
 rename diff_open deviation
 gen variable=24
 save "temp24.dta", replace
@@ -3140,7 +3140,7 @@ collapse maxyear25 rank_demo n_demo pct_demo diff_demo
 rename maxyear25 year
 rename rank_demo rank
 rename n_demo n
-rename pct_demo percentile
+rename pct_demo decile
 rename diff_demo deviation
 gen variable=25
 save "temp25.dta", replace
@@ -3151,7 +3151,7 @@ collapse maxyear26 rank_rule n_rule pct_rule diff_rule
 rename maxyear26 year
 rename rank_rule rank
 rename n_rule n
-rename pct_rule percentile
+rename pct_rule decile
 rename diff_rule deviation
 gen variable=26
 save "temp26.dta", replace
@@ -3162,7 +3162,7 @@ collapse maxyear27 rank_econ_freedom n_econ_freedom pct_econ_freedom diff_econ_f
 rename maxyear27 year
 rename rank_econ_freedom rank
 rename n_econ_freedom n
-rename pct_econ_freedom percentile
+rename pct_econ_freedom decile
 rename diff_econ_freedom deviation
 gen variable=27
 save "temp27.dta", replace
@@ -3173,7 +3173,7 @@ collapse maxyear28 rank_bus_freedom n_bus_freedom pct_bus_freedom diff_bus_freed
 rename maxyear28 year
 rename rank_bus_freedom rank
 rename n_bus_freedom n
-rename pct_bus_freedom percentile
+rename pct_bus_freedom decile
 rename diff_bus_freedom deviation
 gen variable=28
 save "temp28.dta", replace
@@ -3184,7 +3184,7 @@ collapse maxyear29 rank_tech_exp n_tech_exp pct_tech_exp diff_tech_exp
 rename maxyear29 year
 rename rank_tech_exp rank
 rename n_tech_exp n
-rename pct_tech_exp percentile
+rename pct_tech_exp decile
 rename diff_tech_exp deviation
 gen variable=29
 save "temp29.dta", replace
@@ -3195,7 +3195,7 @@ collapse maxyear30 rank_diversity_rca n_diversity_rca pct_diversity_rca diff_div
 rename maxyear30 year
 rename rank_diversity_rca rank
 rename n_diversity_rca n
-rename pct_diversity_rca percentile
+rename pct_diversity_rca decile
 rename diff_diversity_rca deviation
 gen variable=30
 save "temp30.dta", replace
@@ -3206,7 +3206,7 @@ collapse maxyear31 rank_eci_rca n_eci_rca pct_eci_rca diff_eci_rca
 rename maxyear31 year
 rename rank_eci_rca rank
 rename n_eci_rca n
-rename pct_eci_rca percentile
+rename pct_eci_rca decile
 rename diff_eci_rca deviation
 gen variable=31
 save "temp31.dta", replace
@@ -3217,7 +3217,7 @@ collapse maxyear32 rank_coi_rca n_coi_rca pct_coi_rca diff_coi_rca
 rename maxyear32 year
 rename rank_coi_rca rank
 rename n_coi_rca n
-rename pct_coi_rca percentile
+rename pct_coi_rca decile
 rename diff_coi_rca deviation
 gen variable=32
 save "temp32.dta", replace

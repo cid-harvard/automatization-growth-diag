@@ -4,12 +4,12 @@ set more off
 ****************************************************************************************************************************************
 * PARAMETERS TO BE CHANGED BY THE USER:
 * ORIGINAL DIRECTORY:
-cd "C:\Users\Luis Miguel\Documents\Bases de Datos\md4stata"
+cd "C:\Users\Luis Miguel\Documents\Bases de Datos\md4stata\WDI"
 * ORIGINAL DATABASES
 use "wdi2013.dta", clear
 * OTHER DATABASES:
 	* EDUCATION
-	global education "BL2013_MF2599_v1.3.dta"
+	global education "C:\Users\Luis Miguel\Documents\Bases de Datos\md4stata\Educational Attainment (Barro & Lee)\BL2013_MF2599_v1.3.dta"
 	* PHYSICAL CAPITAL
 	global capital "C:\Users\Luis Miguel\Documents\Bases de Datos\Penn World Tables\pwt80\pwt80.dta"
 	* TAX REVENUE
@@ -165,37 +165,13 @@ label var year "Years"
 	gen accel3=1 if accel2==1 & accel2[_n-1]!=1 & accel2[_n-2]!=1 & accel2[_n-3]!=1 & accel2[_n-4]!=1 & accel2[_n-5]!=1 & accel2[_n-6]!=1 & accel2[_n-7]!=1
 	drop accel2
 	rename accel3 accel2
-	* Falls
-	gen fall=1 if gdppc[_n]<gdppc[_n-1] & gdppc[_n]!=. & wbcode[_n]==wbcode[_n-1]
-	* GDPpc before the fall
-	gen double pre_gdp=gdppc[_n-1] if fall==1 & fall[_n-1]!=1 & wbcode[_n]==wbcode[_n-1]
-	replace pre_gdp=pre_gdp[_n-1] if pre_gdp[_n-1]!=. & pre_gdp==. & gdppc<pre_gdp[_n-1] & wbcode[_n]==wbcode[_n-1]
-	replace pre_gdp=pre_gdp[_n-1] if pre_gdp<pre_gdp[_n-1] & pre_gdp[_n-1]!=. & pre_gdp!=. & wbcode[_n]==wbcode[_n-1]
-	replace pre_gdp=pre_gdp[_n-1] if pre_gdp[_n-1]!=. & gdppc<pre_gdp[_n-1] & wbcode[_n]==wbcode[_n-1]
-	replace fall=. if gdppc!=pre_gdp
-	replace fall=1 if gdppc==pre_gdp[_n+1]
-	* Global minima per crisis
-	gen double min_gdp=gdppc if pre_gdp!=.
-	forval i=1/54 {
-		replace min_gdp=min_gdp[_n+`i'] if min_gdp>=min_gdp[_n+`i'] & min_gdp[_n+`i']!=. & pre_gdp==pre_gdp[_n+`i'] & pre_gdp!=. & wbcode[_n]==wbcode[_n+`i']
-		replace min_gdp=min_gdp[_n-`i'] if min_gdp>=min_gdp[_n-`i'] & min_gdp[_n-`i']!=. & pre_gdp==pre_gdp[_n-`i'] & pre_gdp!=. & wbcode[_n]==wbcode[_n-`i']
-	}
-	* End of the crisis
-	gen crisis=1 if gdppc==min_gdp & gdppc!=.
-	replace pre_gdp=. if crisis[_n-1]==1
-	replace pre_gdp=. if pre_gdp[_n-1]==. & fall[_n-1]!=1
-	replace min_gdp=. if crisis[_n-1]==1
-	replace min_gdp=. if min_gdp[_n-1]==. & fall[_n-1]!=1
-	* Duration
-	bys wbcode pre_gdp: egen duration=count(pre_gdp) if pre_gdp!=.
-	sort wbcode year
-	* Peak-trough difference (% of peak)
-	gen peak_trough=(pre_gdp-min_gdp)*100/pre_gdp if pre_gdp!=. & min_gdp!=.
-	* Collapses
-	gen collapse=1 if duration>8 & peak_trough>4 & duration!=. & peak_trough!=.
-	replace collapse=1 if fall==1 & collapse[_n+1]==1
+	* Deacceleration
+	gen deaccel=0
+	replace deaccel=1 if g4<=1.0 & delta<=-2.0
+	* Selecting the deacceleration
+	gen deaccel2=1 if deaccel==1 & deaccel[_n-1]!=1 & deaccel[_n-2]!=1 & deaccel[_n-3]!=1 & deaccel[_n-4]!=1 & deaccel[_n-5]!=1 & deaccel[_n-6]!=1 & deaccel[_n-7]!=1
 	* Defining and counting the thresholds
-	gen milestone=1 if ((fall==1 & collapse==1) | (crisis==1 & collapse==1) | accel2==1) & wbcode=="`ctry'"
+	gen milestone=1 if (deaccel2==1 | accel2==1) & wbcode=="`ctry'"
 	count if milestone==1
 	scalar number_milestones=r(N)
 	if `=number_milestones'>0 {
@@ -318,11 +294,116 @@ twoway connect mnf_gdp year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=min
 */ spike max_mnf_gdp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Manufacturing, value added (% of GDP)") /*
 */ title("Share of manufacturing in GDP, `=minyear'-`=maxyear'") subtitle("`j'") /*
-*/ note("Note: Manufacturing refers to industries belonging to ISIC Rev.3 divisions 15-37" "Data source: World Development Indicators")
+*/ note("Note: Manufacturing corresponds to ISIC Rev.3 divisions 15-37" "Data source: World Development Indicators")
 
 * Exporting results into word document
 gr export "$dir\figure3`ctry'_2B.png", height(548) width(753) replace
 png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure3`ctry'_2B.png") append
+}	
+scalar drop minyear maxyear
+macro drop minyear maxyear
+restore
+
+******************************************************
+** STRUCTURAL TRANSFORMATION: INDUSTRY SHARE OF GDP **
+******************************************************
+rename NV_IND_TOTL_ZS ind_gdp
+preserve
+
+* Statistics for Figure 4
+summ year if wbcode=="`ctry'" & ind_gdp!=.
+* Minimum
+scalar minyear=r(min)
+local minyear: display %9.0fc minyear
+*Maximum
+scalar maxyear=r(max)
+local maxyear: display %9.0fc maxyear
+* Max variable
+summ ind_gdp if wbcode=="`ctry'"
+scalar max_ind_gdp=r(max)
+gen max_ind_gdp=`=max_ind_gdp' if wbcode=="`ctry'"
+
+if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
+* Figure 4
+twoway connect ind_gdp year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_ind_gdp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("Industry, value added (% of GDP)") /*
+*/ title("Share of industry in GDP, `=minyear'-`=maxyear'") subtitle("`j'") /*
+*/ note("Note: Industry corresponds to ISIC Rev.3 divisions 10-45" "Data source: World Development Indicators")
+
+* Exporting results into word document
+gr export "$dir\figure4`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure4`ctry'_2B.png") append
+}	
+scalar drop minyear maxyear
+macro drop minyear maxyear
+restore
+
+******************************************************
+** STRUCTURAL TRANSFORMATION: SERVICES SHARE OF GDP **
+******************************************************
+rename NV_SRV_TETC_ZS ss_gdp
+preserve
+
+* Statistics for Figure 5
+summ year if wbcode=="`ctry'" & ss_gdp!=.
+* Minimum
+scalar minyear=r(min)
+local minyear: display %9.0fc minyear
+*Maximum
+scalar maxyear=r(max)
+local maxyear: display %9.0fc maxyear
+* Max variable
+summ ss_gdp if wbcode=="`ctry'"
+scalar max_ss_gdp=r(max)
+gen max_ss_gdp=`=max_ss_gdp' if wbcode=="`ctry'"
+
+if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
+* Figure 5
+twoway connect ss_gdp year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_ss_gdp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("Services, value added (% of GDP)") /*
+*/ title("Share of services in GDP, `=minyear'-`=maxyear'") subtitle("`j'") /*
+*/ note("Note: Services correspond to ISIC Rev.3 divisions 50-99" "Data source: World Development Indicators")
+
+* Exporting results into word document
+gr export "$dir\figure5`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure5`ctry'_2B.png") append
+}	
+scalar drop minyear maxyear
+macro drop minyear maxyear
+restore
+
+**********************************************************
+** STRUCTURAL TRANSFORMATION: EMPLOYMENT IN AGRICULTURE **
+**********************************************************
+rename SL_AGR_EMPL_ZS emp_agr
+preserve
+
+* Statistics for Figure 6
+summ year if wbcode=="`ctry'" & emp_agr!=.
+* Minimum
+scalar minyear=r(min)
+local minyear: display %9.0fc minyear
+*Maximum
+scalar maxyear=r(max)
+local maxyear: display %9.0fc maxyear
+* Max variable
+summ emp_agr if wbcode=="`ctry'"
+scalar max_emp_agr=r(max)
+gen max_emp_agr=`=max_emp_agr' if wbcode=="`ctry'"
+
+if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
+* Figure 6
+twoway connect emp_agr year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_emp_agr year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("Employment in agriculture (% of total employment)") /*
+*/ title("Agriculture employment, `=minyear'-`=maxyear'") subtitle("`j'") /*
+*/ note("Note: Agriculture corresponds to ISIC Rev.3 divisions 1-5" "Data source: World Development Indicators")
+
+* Exporting results into word document
+gr export "$dir\figure6`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure6`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -334,7 +415,7 @@ restore
 rename SL_IND_EMPL_ZS emp_ind
 preserve
 
-* Statistics for Figure 4
+* Statistics for Figure 7
 summ year if wbcode=="`ctry'" & emp_ind!=.
 * Minimum
 scalar minyear=r(min)
@@ -348,7 +429,7 @@ scalar max_emp_ind=r(max)
 gen max_emp_ind=`=max_emp_ind' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 4
+* Figure 7
 twoway connect emp_ind year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_emp_ind year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Employment in industry (% of total employment)") /*
@@ -356,8 +437,8 @@ twoway connect emp_ind year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=min
 */ note("Note: Industry corresponds to ISIC Rev.3 divisions 10-45" "Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure4`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure4`ctry'_2B.png") append
+gr export "$dir\figure7`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure7`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -369,7 +450,7 @@ restore
 rename SL_SRV_EMPL_ZS emp_ss
 preserve
 
-* Statistics for Figure 5
+* Statistics for Figure 8
 summ year if wbcode=="`ctry'" & emp_ss!=.
 * Minimum
 scalar minyear=r(min)
@@ -383,7 +464,7 @@ scalar max_emp_ss=r(max)
 gen max_emp_ss=`=max_emp_ss' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 5
+* Figure 8
 twoway connect emp_ss year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_emp_ss year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Employment in services (% of total employment)") /*
@@ -391,8 +472,8 @@ twoway connect emp_ss year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=miny
 */ note("Note: Services correspond to ISIC Rev.3 divisions 50-99" "Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure5`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure5`ctry'_2B.png") append
+gr export "$dir\figure8`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure8`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -403,11 +484,11 @@ restore
 ** PHYSICAL CAPITAL: ENERGY CONSUMPTION PER CAPITA **
 *****************************************************
 rename EG_USE_PCAP_KG_OE energypc
-gen lnenergypc=ln(energypc)
+gen logenergypc=log10(energypc)
 preserve
 
-* Statistics for Figure 6
-summ year if wbcode=="`ctry'" & lnenergypc!=.
+* Statistics for Figure 9
+summ year if wbcode=="`ctry'" & logenergypc!=.
 * Minimum
 scalar minyear=r(min)
 local minyear: display %9.0fc minyear
@@ -415,21 +496,21 @@ local minyear: display %9.0fc minyear
 scalar maxyear=r(max)
 local maxyear: display %9.0fc maxyear
 * Max variable
-summ lnenergypc if wbcode=="`ctry'"
-scalar max_lnenergypc=r(max)
-gen max_lnenergypc=`=max_lnenergypc' if wbcode=="`ctry'"
+summ logenergypc if wbcode=="`ctry'"
+scalar max_logenergypc=r(max)
+gen max_logenergypc=`=max_logenergypc' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 6
-twoway connect lnenergypc year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
-*/ spike max_lnenergypc year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+* Figure 9
+twoway connect logenergypc year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_logenergypc year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Energy use (kg of oil equivalent per capita), log") /*
 */ title("Energy consumption per capita, `=minyear'-`=maxyear'") subtitle("`j'") /*
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure6`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure6`ctry'_2B.png") append
+gr export "$dir\figure9`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure9`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -448,10 +529,10 @@ merge 1:1 wbcode year using "temp.dta"
 drop _merge
 replace country="`j'" if wbcode=="`ctry'"
 sort wbcode year
-gen kpw=ln(rkna/SL_TLF_TOTL_IN)
+gen kpw=log10(rkna*1000000/SL_TLF_TOTL_IN)
 preserve
 
-* Statistics for Figure 7
+* Statistics for Figure 10
 summ year if wbcode=="`ctry'" & kpw!=.
 * Minimum
 scalar minyear=r(min)
@@ -467,7 +548,7 @@ scalar min_kpw=r(min)
 gen min_kpw=`=min_kpw' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 7
+* Figure 10
 twoway connect kpw year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_kpw year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) || /*
 */ spike min_kpw year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
@@ -476,8 +557,8 @@ twoway connect kpw year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear
 */ note("Data source: Penn World Table 8.0")
 
 * Exporting results into word document
-gr export "$dir\figure7`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure7`ctry'_2B.png") append
+gr export "$dir\figure10`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure10`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -497,7 +578,7 @@ sort wbcode year
 rename yr_sch school
 preserve
 
-* Statistics for Figure 8
+* Statistics for Figure 11
 summ year if wbcode=="`ctry'" & school!=.
 * Minimum
 scalar minyear=r(min)
@@ -511,7 +592,7 @@ scalar max_school=r(max)
 gen max_school=`=max_school' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 8
+* Figure 11
 twoway connect school year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_school year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Years of schooling") /*
@@ -519,20 +600,69 @@ twoway connect school year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=miny
 */ note("Data source: Barro-Lee dataset")
 
 * Exporting results into word document
-gr export "$dir\figure8`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure8`ctry'_2B.png") append
+gr export "$dir\figure11`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure11`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
 restore
 
-***********************************************
-** HUMAN CAPITAL: SECONDARY ENROLLMENT (NET) **
-***********************************************
-rename SE_SEC_NENR sec
+**************************************
+** HUMAN CAPITAL: PRIMARY SCHOOLING **
+**************************************
+save "temp.dta", replace
+use "$education", clear /*Barro and Lee only have data for every 5 years*/
+keep wbcode year lp
+merge 1:1 wbcode year using "temp.dta" 
+drop _merge
+replace country="`j'" if wbcode=="`ctry'"
+sort wbcode year
+rename lp prim
 preserve
 
-* Statistics for Figure 9
+* Statistics for Figure 12
+summ year if wbcode=="`ctry'" & prim!=.
+* Minimum
+scalar minyear=r(min)
+local minyear: display %9.0fc minyear
+*Maximum
+scalar maxyear=r(max)
+local maxyear: display %9.0fc maxyear
+* Max variable
+summ prim if wbcode=="`ctry'"
+scalar max_prim=r(max)
+gen max_prim=`=max_prim' if wbcode=="`ctry'"
+
+if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
+* Figure 12
+twoway connect prim year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_prim year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("Primary schooling attained in Pop. (%)") /*
+*/ title("Primary schooling, `=minyear'-`=maxyear'") subtitle("Population aged 25 and over, `j'") /*
+*/ note("Data source: Barro-Lee dataset")
+
+* Exporting results into word document
+gr export "$dir\figure12`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure12`ctry'_2B.png") append
+}	
+scalar drop minyear maxyear
+macro drop minyear maxyear
+restore
+
+****************************************
+** HUMAN CAPITAL: SECONDARY SCHOOLING **
+****************************************
+save "temp.dta", replace
+use "$education", clear /*Barro and Lee only have data for every 5 years*/
+keep wbcode year ls
+merge 1:1 wbcode year using "temp.dta" 
+drop _merge
+replace country="`j'" if wbcode=="`ctry'"
+sort wbcode year
+rename ls sec
+preserve
+
+* Statistics for Figure 13
 summ year if wbcode=="`ctry'" & sec!=.
 * Minimum
 scalar minyear=r(min)
@@ -546,61 +676,35 @@ scalar max_sec=r(max)
 gen max_sec=`=max_sec' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 9
+* Figure 13
 twoway connect sec year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_sec year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
-*/ ytitle("School enrollment, secondary (% net)") /*
-*/ title("Secondary enrollment, `=minyear'-`=maxyear'") subtitle("`j'") /*
-*/ note("Data source: World Development Indicators")
+*/ ytitle("Secondary schooling attained in Pop. (%)") /*
+*/ title("Secondary schooling, `=minyear'-`=maxyear'") subtitle("Population aged 25 and over, `j'") /*
+*/ note("Data source: Barro-Lee dataset")
 
 * Exporting results into word document
-gr export "$dir\figure9`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure9`ctry'_2B.png") append
+gr export "$dir\figure13`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure13`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
 restore
-**************************************************************
-** HUMAN CAPITAL: SCIENTIFIC AND TECHNICAL JOURNAL ARTICLES **
-**************************************************************
-gen journal=IP_JRN_ARTC_SC*1000/SP_POP_TOTL
+
+****************************************
+** HUMAN CAPITAL: TERTIARY SCHOOLING **
+****************************************
+save "temp.dta", replace
+use "$education", clear /*Barro and Lee only have data for every 5 years*/
+keep wbcode year lh
+merge 1:1 wbcode year using "temp.dta" 
+drop _merge
+replace country="`j'" if wbcode=="`ctry'"
+sort wbcode year
+rename lh univ
 preserve
 
-* Statistics for Figure 10
-summ year if wbcode=="`ctry'" & journal!=.
-* Minimum
-scalar minyear=r(min)
-local minyear: display %9.0fc minyear
-*Maximum
-scalar maxyear=r(max)
-local maxyear: display %9.0fc maxyear
-* Max variable
-summ journal if wbcode=="`ctry'"
-scalar max_journal=r(max)
-gen max_journal=`=max_journal' if wbcode=="`ctry'"
-
-if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 10
-twoway connect journal year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
-*/ spike max_journal year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
-*/ ytitle("Scientific and technical journal articles per 1,000 people") /*
-*/ title("Scientific and Technical Journal Articles, `=minyear'-`=maxyear'") subtitle("Per 1,000 people, `j'") /*
-*/ note("Data source: World Development Indicators")
-
-* Exporting results into word document
-gr export "$dir\figure10`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure10`ctry'_2B.png") append
-}
-scalar drop minyear maxyear
-macro drop minyear maxyear
-restore
-***************************************
-** HUMAN CAPITAL: TERTIARY EDUCATION **
-***************************************
-rename SL_TLF_TERT_ZS univ
-preserve
-
-* Statistics for Figure 11
+* Statistics for Figure 14
 summ year if wbcode=="`ctry'" & univ!=.
 * Minimum
 scalar minyear=r(min)
@@ -614,17 +718,87 @@ scalar max_univ=r(max)
 gen max_univ=`=max_univ' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 11
+* Figure 14
 twoway connect univ year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_univ year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
-*/ ytitle("Labor force with tertiary education (% of total)") /*
-*/ title("University education, `=minyear'-`=maxyear'") subtitle("`j'") /*
+*/ ytitle("Tertiary schooling attained in Pop. (%)") /*
+*/ title("Tertiary schooling, `=minyear'-`=maxyear'") subtitle("Population aged 25 and over, `j'") /*
+*/ note("Data source: Barro-Lee dataset")
+
+* Exporting results into word document
+gr export "$dir\figure14`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure14`ctry'_2B.png") append
+}	
+scalar drop minyear maxyear
+macro drop minyear maxyear
+restore
+
+**************************************************************
+** HUMAN CAPITAL: SCIENTIFIC AND TECHNICAL JOURNAL ARTICLES **
+**************************************************************
+gen journal=IP_JRN_ARTC_SC*1000/SP_POP_TOTL
+preserve
+
+* Statistics for Figure 15
+summ year if wbcode=="`ctry'" & journal!=.
+* Minimum
+scalar minyear=r(min)
+local minyear: display %9.0fc minyear
+*Maximum
+scalar maxyear=r(max)
+local maxyear: display %9.0fc maxyear
+* Max variable
+summ journal if wbcode=="`ctry'"
+scalar max_journal=r(max)
+gen max_journal=`=max_journal' if wbcode=="`ctry'"
+
+if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
+* Figure 15
+twoway connect journal year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_journal year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("Scientific and technical journal articles per 1,000 people") /*
+*/ title("Scientific and Technical Journal Articles, `=minyear'-`=maxyear'") subtitle("Per 1,000 people, `j'") /*
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure11`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure11`ctry'_2B.png") append
-}	
+gr export "$dir\figure15`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure15`ctry'_2B.png") append
+}
+scalar drop minyear maxyear
+macro drop minyear maxyear
+restore
+
+***************************************
+** HUMAN CAPITAL: RESEARCHERS IN R&D **
+***************************************
+rename SP_POP_SCIE_RD_P6 research
+preserve
+
+* Statistics for Figure 16
+summ year if wbcode=="`ctry'" & research!=.
+* Minimum
+scalar minyear=r(min)
+local minyear: display %9.0fc minyear
+*Maximum
+scalar maxyear=r(max)
+local maxyear: display %9.0fc maxyear
+* Max variable
+summ research if wbcode=="`ctry'"
+scalar max_research=r(max)
+gen max_research=`=max_research' if wbcode=="`ctry'"
+
+if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
+* Figure 16
+twoway connect research year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
+*/ spike max_research year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("Researchers in R&D per million people") /*
+*/ title("Researchers in R&D, `=minyear'-`=maxyear'") subtitle("Per million people, `j'") /*
+*/ note("Data source: World Development Indicators")
+
+* Exporting results into word document
+gr export "$dir\figure16`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure16`ctry'_2B.png") append
+}
 scalar drop minyear maxyear
 macro drop minyear maxyear
 restore
@@ -636,7 +810,7 @@ restore
 rename SP_DYN_IMRT_IN infant
 preserve
 
-* Statistics for Figure 12
+* Statistics for Figure 17
 summ year if wbcode=="`ctry'" & infant!=.
 * Minimum
 scalar minyear=r(min)
@@ -650,7 +824,7 @@ scalar max_infant=r(max)
 gen max_infant=`=max_infant' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 12
+* Figure 17
 twoway connect infant year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_infant year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Mortality rate, infant (per 1,000 live births)") /*
@@ -658,8 +832,8 @@ twoway connect infant year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=miny
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure12`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure12`ctry'_2B.png") append
+gr export "$dir\figure17`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure17`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -671,7 +845,7 @@ restore
 rename SP_DYN_TFRT_IN fertil
 preserve
 
-* Statistics for Figure 13
+* Statistics for Figure 18
 summ year if wbcode=="`ctry'" & fertil!=.
 * Minimum
 scalar minyear=r(min)
@@ -685,7 +859,7 @@ scalar max_fertil=r(max)
 gen max_fertil=`=max_fertil' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 13
+* Figure 18
 twoway connect fertil year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_fertil year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Fertility rate, total (births per woman)") /*
@@ -693,8 +867,8 @@ twoway connect fertil year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=miny
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure13`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure13`ctry'_2B.png") append
+gr export "$dir\figure18`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure18`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -706,7 +880,7 @@ restore
 rename SP_DYN_LE00_IN life
 preserve
 
-* Statistics for Figure 14
+* Statistics for Figure 19
 summ year if wbcode=="`ctry'" & life!=.
 * Minimum
 scalar minyear=r(min)
@@ -720,7 +894,7 @@ scalar max_life=r(max)
 gen max_life=`=max_life' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 14
+* Figure 19
 twoway connect life year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_life year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Life expectancy at birth, total (years)") /*
@@ -728,8 +902,8 @@ twoway connect life year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyea
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure14`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure14`ctry'_2B.png") append
+gr export "$dir\figure19`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure19`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -741,7 +915,7 @@ restore
 rename SP_POP_GROW pop_g
 preserve
 
-* Statistics for Figure 15
+* Statistics for Figure 20
 summ year if wbcode=="`ctry'" & pop_g!=.
 * Minimum
 scalar minyear=r(min)
@@ -755,7 +929,7 @@ scalar max_pop_g=r(max)
 gen max_pop_g=`=max_pop_g' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 15
+* Figure 20
 twoway connect pop_g year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_pop_g year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Population growth (annual %)") /*
@@ -763,8 +937,8 @@ twoway connect pop_g year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minye
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure15`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure15`ctry'_2B.png") append
+gr export "$dir\figure20`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure20`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -776,7 +950,7 @@ restore
 rename SP_POP_DPND depend
 preserve
 
-* Statistics for Figure 16
+* Statistics for Figure 21
 summ year if wbcode=="`ctry'" & depend!=.
 * Minimum
 scalar minyear=r(min)
@@ -790,7 +964,7 @@ scalar max_depend=r(max)
 gen max_depend=`=max_depend' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 16
+* Figure 21
 twoway connect depend year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_depend year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Age dependency ratio (% of working-age population)") /*
@@ -798,8 +972,8 @@ twoway connect depend year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=miny
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure16`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure16`ctry'_2B.png") append
+gr export "$dir\figure21`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure21`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -810,7 +984,7 @@ restore
 **************************
 preserve
 
-* Statistics for Figure 17
+* Statistics for Figure 22
 summ year if wbcode=="`ctry'" & rtfpna!=.
 * Minimum
 scalar minyear=r(min)
@@ -824,7 +998,7 @@ scalar max_rtfpna=r(max)
 gen max_rtfpna=`=max_rtfpna' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 17
+* Figure 22
 twoway connect rtfpna year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_rtfpna year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("TFP level at constant national prices (2005=1)") /*
@@ -832,8 +1006,8 @@ twoway connect rtfpna year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=miny
 */ note("Data source: Penn World Table 8.0")
 
 * Exporting results into word document
-gr export "$dir\figure17`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure17`ctry'_2B.png") append
+gr export "$dir\figure22`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure22`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -860,7 +1034,7 @@ sort wbcode year
 rename y tax_gdp
 preserve
 
-* Statistics for Figure 18
+* Statistics for Figure 23
 summ year if wbcode=="`ctry'" & tax_gdp!=.
 * Minimum
 scalar minyear=r(min)
@@ -874,7 +1048,7 @@ scalar max_tax_gdp=r(max)
 gen max_tax_gdp=`=max_tax_gdp' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 18
+* Figure 23
 twoway connect tax_gdp year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_tax_gdp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("General government revenue (% of GDP)") /*
@@ -882,8 +1056,8 @@ twoway connect tax_gdp year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=min
 */ note("Data source: World Economic Outlook")
 
 * Exporting results into word document
-gr export "$dir\figure18`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure18`ctry'_2B.png") append
+gr export "$dir\figure23`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure23`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -895,7 +1069,7 @@ restore
 gen open=NE_EXP_GNFS_ZS+NE_IMP_GNFS_ZS
 preserve
 
-* Statistics for Figure 19
+* Statistics for Figure 24
 summ year if wbcode=="`ctry'" & open!=.
 * Minimum
 scalar minyear=r(min)
@@ -909,7 +1083,7 @@ scalar max_open=r(max)
 gen max_open=`=max_open' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 19
+* Figure 24
 twoway connect open year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_open year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Exports + Imports of goods and services (% of GDP)") /*
@@ -917,8 +1091,8 @@ twoway connect open year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyea
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure19`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure19`ctry'_2B.png") append
+gr export "$dir\figure24`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure24`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -998,7 +1172,7 @@ sort wbcode year
 rename fh_ipolity2 demo
 preserve
 
-* Statistics for Figure 20
+* Statistics for Figure 25
 summ year if wbcode=="`ctry'" & demo!=.
 * Minimum
 scalar minyear=r(min)
@@ -1012,7 +1186,7 @@ scalar max_demo=r(max)
 gen max_demo=`=max_demo' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 20
+* Figure 25
 twoway connect demo year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_demo year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Democracy (Freedom House/Imputed Polity)") /*
@@ -1020,8 +1194,8 @@ twoway connect demo year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyea
 */ note("Data source: The Quality of Government Dataset (Freedom House/Polity)")
 
 * Exporting results into word document
-gr export "$dir\figure20`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure20`ctry'_2B.png") append
+gr export "$dir\figure25`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure25`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -1033,7 +1207,7 @@ restore
 rename fh_rol rule
 preserve
 
-* Statistics for Figure 21
+* Statistics for Figure 26
 summ year if wbcode=="`ctry'" & rule!=.
 * Minimum
 scalar minyear=r(min)
@@ -1047,7 +1221,7 @@ scalar max_rule=r(max)
 gen max_rule=`=max_rule' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 21
+* Figure 26
 twoway connect rule year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_rule year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Rule of Law") /*
@@ -1055,8 +1229,8 @@ twoway connect rule year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyea
 */ note("Data source: The Quality of Government Dataset (Freedom House)")
 
 * Exporting results into word document
-gr export "$dir\figure21`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure21`ctry'_2B.png") append
+gr export "$dir\figure26`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure26`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -1068,7 +1242,7 @@ restore
 rename hf_efiscore econ_freedom
 preserve
 
-* Statistics for Figure 22
+* Statistics for Figure 27
 summ year if wbcode=="`ctry'" & econ_freedom!=.
 * Minimum
 scalar minyear=r(min)
@@ -1082,7 +1256,7 @@ scalar max_econ_freedom=r(max)
 gen max_econ_freedom=`=max_econ_freedom' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 22
+* Figure 27
 twoway connect econ_freedom year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_econ_freedom year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Economic Freedom Index") /*
@@ -1092,8 +1266,8 @@ twoway connect econ_freedom year if wbcode=="`ctry'" & year>=`=minyear', xlabel(
 */ "Data source: The Quality of Government Dataset (Heritage Foundation)")
 
 * Exporting results into word document
-gr export "$dir\figure22`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure22`ctry'_2B.png") append
+gr export "$dir\figure27`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure27`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -1105,7 +1279,7 @@ restore
 rename hf_business bus_freedom
 preserve
 
-* Statistics for Figure 23
+* Statistics for Figure 28
 summ year if wbcode=="`ctry'" & bus_freedom!=.
 * Minimum
 scalar minyear=r(min)
@@ -1119,7 +1293,7 @@ scalar max_bus_freedom=r(max)
 gen max_bus_freedom=`=max_bus_freedom' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 23
+* Figure 28
 twoway connect bus_freedom year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_bus_freedom year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Business Freedom score") /*
@@ -1130,21 +1304,20 @@ twoway connect bus_freedom year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`
 */ "Data source: The Quality of Government Dataset (Heritage Foundation)")
 
 * Exporting results into word document
-gr export "$dir\figure23`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure23`ctry'_2B.png") append
+gr export "$dir\figure28`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure28`ctry'_2B.png") append
 }	
 scalar drop minyear maxyear
 macro drop minyear maxyear
 restore
 
-*****************************************************
-** COMPOSITION OF EXPORTS: HIGH-TECHNOLOGY EXPORTS **
-*****************************************************
-gen tech_exp=TX_VAL_TECH_MF_ZS*TX_VAL_MANF_ZS_UN/100
-format tech_exp %9.1fc
+****************************************************************
+** COMPOSITION OF EXPORTS: HIGH-TECHNOLOGY EXPORTS PER CAPITA **
+****************************************************************
+gen tech_exp=log10(TX_VAL_TECH_CD/SP_POP_TOTL)
 preserve
 
-* Statistics for Figure 24
+* Statistics for Figure 29
 summ year if wbcode=="`ctry'" & tech_exp!=.
 * Minimum
 scalar minyear=r(min)
@@ -1152,22 +1325,26 @@ local minyear: display %9.0fc minyear
 *Maximum
 scalar maxyear=r(max)
 local maxyear: display %9.0fc maxyear
-* Max variable
+* Max/Min variable
 summ tech_exp if wbcode=="`ctry'"
 scalar max_tech_exp=r(max)
 gen max_tech_exp=`=max_tech_exp' if wbcode=="`ctry'"
+scalar min_tech_exp=r(min)
+gen min_tech_exp=`=min_tech_exp' if wbcode=="`ctry'"
+
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 24
+* Figure 29
 twoway connect tech_exp year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
-*/ spike max_tech_exp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
-*/ ytitle("High-technology exports (% of merchandise exports)") /*
-*/ title("High-technology exports, `=minyear'-`=maxyear'") subtitle("`j'") /*
+*/ spike max_tech_exp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) || /*
+*/ spike min_tech_exp year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
+*/ ytitle("High-technology exports per capita (current US$), log") /*
+*/ title("High-technology exports per capita, `=minyear'-`=maxyear'") subtitle("`j'") /*
 */ note("Data source: World Development Indicators")
 
 * Exporting results into word document
-gr export "$dir\figure24`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure24`ctry'_2B.png") append
+gr export "$dir\figure29`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure29`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -1185,7 +1362,7 @@ merge 1:1 wbcode year using "temp.dta"
 drop if _merge!=3
 drop _merge
 
-* Statistics for Figure 25
+* Statistics for Figure 30
 summ year if wbcode=="`ctry'" & diversity_rca!=.
 * Minimum
 scalar minyear=r(min)
@@ -1199,7 +1376,7 @@ scalar max_diversity_rca=r(max)
 gen max_diversity_rca=`=max_diversity_rca' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 25
+* Figure 30
 twoway connect diversity_rca year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_diversity_rca year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
 */ ytitle("Number of products exported with RCA") /*
@@ -1208,8 +1385,8 @@ twoway connect diversity_rca year if wbcode=="`ctry'" & year>=`=minyear', xlabel
 */ "product in the total exported amount of a given country relative to the average world's share" "Data source: CID database")
 
 * Exporting results into word document
-gr export "$dir\figure25`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure25`ctry'_2B.png") append
+gr export "$dir\figure30`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure30`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -1228,7 +1405,7 @@ drop if _merge!=3
 drop _merge
 format eci_rca %9.1fc
 
-* Statistics for Figure 26
+* Statistics for Figure 31
 summ year if wbcode=="`ctry'" & eci_rca!=.
 * Minimum
 scalar minyear=r(min)
@@ -1244,7 +1421,7 @@ scalar min_eci_rca=r(min)
 gen min_eci_rca=`=min_eci_rca' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 26
+* Figure 31
 twoway connect eci_rca year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_eci_rca year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) || /*
 */ spike min_eci_rca year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
@@ -1253,8 +1430,8 @@ twoway connect eci_rca year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=min
 */ note("Data source: CID database")
 
 * Exporting results into word document
-gr export "$dir\figure26`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure26`ctry'_2B.png") append
+gr export "$dir\figure31`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure31`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear
@@ -1274,7 +1451,7 @@ drop _merge
 rename oppvalue_rca coi_rca
 format coi_rca %9.1fc
 
-* Statistics for Figure 27
+* Statistics for Figure 32
 summ year if wbcode=="`ctry'" & coi_rca!=.
 * Minimum
 scalar minyear=r(min)
@@ -1290,7 +1467,7 @@ scalar min_coi_rca=r(min)
 gen min_coi_rca=`=min_coi_rca' if wbcode=="`ctry'"
 
 if `=minyear'!=. & `=maxyear'!=. & `=minyear'!=`=maxyear' {
-* Figure 27
+* Figure 32
 twoway connect coi_rca year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=minyear'(5)`=maxyear') xsc(range(`=minyear'(5)`=maxyear')) lwidth(medthick) || /*
 */ spike max_coi_rca year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) || /*
 */ spike min_coi_rca year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear', lcolor(gs8) legend(off) /*
@@ -1299,8 +1476,8 @@ twoway connect coi_rca year if wbcode=="`ctry'" & year>=`=minyear', xlabel(`=min
 */ note("Data source: CID database")
 
 * Exporting results into word document
-gr export "$dir\figure27`ctry'_2B.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure27`ctry'_2B.png") append
+gr export "$dir\figure32`ctry'_2B.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_2B.doc", g("$dir\figure32`ctry'_2B.png") append
 }
 scalar drop minyear maxyear
 macro drop minyear maxyear

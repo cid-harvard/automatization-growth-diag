@@ -55,9 +55,11 @@ sort country year
 drop if wbcode=="QAT" | wbcode=="KWT" | wbcode=="ARE" | wbcode=="OMN" | wbcode=="SAU" | wbcode=="BHR"
 
 * WARNING: ELIMINATION OF BELARUS BECAUSE IT HAS A "TOO NEGATIVE" REAL INTEREST RATE
-drop if wbcode=="BLR"
+	* Check in graphs where real interest rate appears
 * WARNING: ELIMINATION OF ZIMBABWE BECAUSE IT HAS A "TOO VOLATILE" EXCHANGE RATE
-drop if wbcode=="ZWE"
+	* Check in graphs where exchange rate volatility appears
+* WARNING: ELIMINATION OF SUDAN BECAUSE IT HAS A "TOO HIGH" SHORT-TERM DEBT TO RESERVES RATIO
+	* Check in graphs where short-term debt to reserves appears
 
 * Region
 gen region=.
@@ -149,10 +151,10 @@ scalar region`ctry'=r(mean)
 
 * Renaming and labeling
 rename NY_GDP_PCAP_KD gdppc			/* GDP per capita (constant 2005 US$) <-- FOR TIME SERIES */
-gen loggdppc=log(gdppc)
+gen loggdppc=log10(gdppc)
 label var loggdppc "Log(GDPPC)"
 rename NY_GDP_PCAP_PP_KD gdppc2		/* GDP per capita, PPP (constant 2005 international $) <-- FOR CROSS-SECTION */
-gen loggdppc2=log(gdppc2)
+gen loggdppc2=log10(gdppc2)
 label var loggdppc "GDP per capita (constant 2005 US$), log"
 label var loggdppc2 "GDP per capita, PPP (constant 2005 international $), log"
 label var year "Years"
@@ -288,6 +290,9 @@ restore
 rename FR_INR_RINR real_i
 preserve
 
+* WARNING: ELIMINATION OF BELARUS BECAUSE IT HAS A "TOO NEGATIVE" REAL INTEREST RATE
+drop if wbcode=="BLR"
+
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & real_i!=.
@@ -356,6 +361,9 @@ replace invest_m=(NE_GDI_FTOT_ZS[_n]+NE_GDI_FTOT_ZS[_n-1]+NE_GDI_FTOT_ZS[_n-2])/
 gen real_i_m=(real_i[_n]+real_i[_n-1]+real_i[_n-2])/3 if wbcode[_n]==wbcode[_n-1] & wbcode[_n]==wbcode[_n-2]
 preserve
 
+* WARNING: ELIMINATION OF BELARUS BECAUSE IT HAS A "TOO NEGATIVE" REAL INTEREST RATE
+drop if wbcode=="BLR"
+
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if real_i_m!=. & invest_m!=.
@@ -421,6 +429,9 @@ restore
 rename NE_GDI_FTOT_ZS invest
 preserve
 
+* WARNING: ELIMINATION OF BELARUS BECAUSE IT HAS A "TOO NEGATIVE" REAL INTEREST RATE
+drop if wbcode=="BLR"
+
 * Statistics for Figure 4
 summ year if wbcode=="`ctry'" & real_i!=. & invest!=.
 * Minimum
@@ -456,28 +467,26 @@ png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure4`ctry'_4.png") append
 
 restore
 
-*************************************************************
-** INVESTMENTS FINANCED BY BANKS OR EQUITY (CROSS-SECTION) **
-*************************************************************
+***************************************************
+** INVESTMENTS FINANCED BY BANKS (CROSS-SECTION) **
+***************************************************
 preserve
 save "temp.dta", replace
 use "$es_finance", clear		/* Entreprise Surveys */
 merge 1:1 wbcode year using "temp.dta"
 drop if _merge!=3
 drop _merge
-gen invest_bank_equity=invest_bank+invest_equity
-label var invest_bank_equity "Proportion of investments financed by banks or equity"
 
 * Years
-summ year if loggdppc2!=. & invest_bank_equity!=.
+summ year if loggdppc2!=. & invest_bank!=.
 scalar minyear5=r(min)
 scalar maxyear5=r(max)
-summ year if wbcode=="`ctry'" & loggdppc2!=. & invest_bank_equity!=.
+summ year if wbcode=="`ctry'" & loggdppc2!=. & invest_bank!=.
 scalar year5=r(mean)
 
 * Statistics for Figure 5
 * Deciles
-foreach x in loggdppc2 invest_bank_equity {
+foreach x in loggdppc2 invest_bank {
 	xtile pct=`x' if `x'!=., nq(10)
 	summ pct if wbcode=="`ctry'"
 	scalar pct_`x'=r(mean)
@@ -485,7 +494,7 @@ foreach x in loggdppc2 invest_bank_equity {
 	drop pct
 	}
 * Ranks
-foreach x in loggdppc2 invest_bank_equity {
+foreach x in loggdppc2 invest_bank {
 	count if `x'!=.
 	scalar n_`x'=r(N)
 	xtile rank=1/`x' if `x'!=., nq(`=n_`x'')
@@ -495,22 +504,22 @@ foreach x in loggdppc2 invest_bank_equity {
 	}
 	
 * Figure 5
-lpoly invest_bank_equity loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-*/ title("Investments financed by banks or equity vs. GDP per capita," "`=minyear5'-`=maxyear5'") subtitle("`j', `=year5'") /*
+lpoly invest_bank loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
+*/ title("Investments financed by banks vs. GDP per capita," "`=minyear5'-`=maxyear5'") subtitle("`j', `=year5'") /*
 */ note("Data source: Enterprise Surveys and World Development Indicators") /*
-*/ ytitle("Proportion of investments financed by banks or equity") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
-*/ addplot(scatter invest_bank_equity loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
-*/ scatter invest_bank_equity loggdppc2 if region==`=region`ctry'', mlabel(wbcode) mlabsize(vsmall) mcolor(orange) mlabcolor(orange) || /*
-*/ scatter invest_bank_equity loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
+*/ ytitle("Proportion of investments financed by banks") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
+*/ addplot(scatter invest_bank loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
+*/ scatter invest_bank loggdppc2 if region==`=region`ctry'', mlabel(wbcode) mlabsize(vsmall) mcolor(orange) mlabcolor(orange) || /*
+*/ scatter invest_bank loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 
 * Exporting results into word document
 gr export "$dir\figure5`ctry'_4.png", height(548) width(753) replace
 png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure5`ctry'_4.png") append
 
 * How many s.d. is the country from the fitted value?
-gen diff=(invest_bank_equity-pred)/se
+gen diff=(invest_bank-pred)/se
 summ diff if wbcode=="`ctry'"
-scalar diff_invest_bank_equity=r(mean)
+scalar diff_invest_bank=r(mean)
 drop pred se diff
 
 restore
@@ -1356,14 +1365,17 @@ if `=maxyear21'!=. {
 }
 restore
 
-***********************************
-** SHORT-TERM DEBT (TIME SERIES) **
-***********************************
-rename DT_DOD_DSTC_ZS s_debt
+*********************************************************
+** SHORT-TERM EXTERNAL DEBT (% RESERVES) (TIME SERIES) **
+*********************************************************
+rename DT_DOD_DSTC_IR_ZS s_debt_r
 preserve
 
+* WARNING: ELIMINATION OF SUDAN BECAUSE IT HAS A "TOO HIGH" SHORT-TERM DEBT TO RESERVES RATIO
+drop if wbcode=="SDN"
+
 * Statistics for Figure 22
-summ year if wbcode=="`ctry'" & s_debt!=.
+summ year if wbcode=="`ctry'" & s_debt_r!=.
 * Minimum
 scalar minyear22=r(min)
 local minyear22: display %9.0fc minyear22
@@ -1371,28 +1383,28 @@ local minyear22: display %9.0fc minyear22
 scalar maxyear22=r(max)
 local maxyear22: display %9.0fc maxyear22
 * Max/Min variable
-summ s_debt if wbcode=="`ctry'" & year>=`=`=maxyear22'-20'
-scalar max_s_debt=r(max)
-gen max_s_debt=`=max_s_debt' if wbcode=="`ctry'"
-scalar min_s_debt=r(min)
-gen min_s_debt=`=min_s_debt' if wbcode=="`ctry'"
+summ s_debt_r if wbcode=="`ctry'" & year>=`=`=maxyear22'-20'
+scalar max_s_debt_r=r(max)
+gen max_s_debt_r=`=max_s_debt_r' if wbcode=="`ctry'"
+scalar min_s_debt_r=r(min)
+gen min_s_debt_r=`=min_s_debt_r' if wbcode=="`ctry'"
 
 * Figure 22
 if `=minyear22'<`=`=maxyear22'-20' {
-	twoway connect s_debt year if wbcode=="`ctry'" & year>=`=`=maxyear22'-20', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear22'-20', lcolor(gs8) legend(off) || /*
-	*/ spike min_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear22'-20', lcolor(gs8) legend(off) /*
-	*/ ytitle("Short-term debt (% of total external debt)") /*
-	*/ title("Short-term external debt, `=`=maxyear22'-20'-`=maxyear22'") subtitle("`j'") /*
+	twoway connect s_debt_r year if wbcode=="`ctry'" & year>=`=`=maxyear22'-20', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_s_debt_r year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear22'-20', lcolor(gs8) legend(off) || /*
+	*/ spike min_s_debt_r year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear22'-20', lcolor(gs8) legend(off) /*
+	*/ ytitle("Short-term debt (% of total reserves)") /*
+	*/ title("Short-term debt to reserves, `=`=maxyear22'-20'-`=maxyear22'") subtitle("`j'") /*
 	*/ note("Note: Short-term debt includes all debt having an original maturity of one year or less and interest" /*
 	*/ "in arrears on long-term debt." "Data source: World Development Indicators")
 }
 else {
-	twoway connect s_debt year if wbcode=="`ctry'" & year>=`=minyear22', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear22', lcolor(gs8) legend(off) || /*
-	*/ spike min_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear22', lcolor(gs8) legend(off) /*
-	*/ ytitle("Short-term debt (% of total external debt)") /*
-	*/ title("Short-term external debt, `=minyear22'-`=maxyear22'") subtitle("`j'") /*
+	twoway connect s_debt_r year if wbcode=="`ctry'" & year>=`=minyear22', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_s_debt_r year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear22', lcolor(gs8) legend(off) || /*
+	*/ spike min_s_debt_r year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear22', lcolor(gs8) legend(off) /*
+	*/ ytitle("Short-term debt (% of total reserves)") /*
+	*/ title("Short-term debt to reserves, `=minyear22'-`=maxyear22'") subtitle("`j'") /*
 	*/ note("Note: Short-term debt includes all debt having an original maturity of one year or less and interest" /*
 	*/ "in arrears on long-term debt." "Data source: World Development Indicators")
 }
@@ -1403,23 +1415,26 @@ png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure22`ctry'_4.png") append
 
 restore
 
-*************************************
-** SHORT-TERM DEBT (CROSS-SECTION) **
-*************************************
+***********************************************************
+** SHORT-TERM EXTERNAL DEBT (% RESERVES) (CROSS-SECTION) **
+***********************************************************
 preserve
+
+* WARNING: ELIMINATION OF SUDAN BECAUSE IT HAS A "TOO HIGH" SHORT-TERM DEBT TO RESERVES RATIO
+drop if wbcode=="SDN"
 
 * Maximum years
 forval x=2013(-1)1960 {
-	summ year if loggdppc2!=. & s_debt!=.
+	summ year if loggdppc2!=. & s_debt_r!=.
 	scalar maxyear23=r(max)
-	bys year: count if loggdppc2!=. & s_debt!=.
+	bys year: count if loggdppc2!=. & s_debt_r!=.
 	if r(N)>=30 {
 		keep if year==`=maxyear23'
 	}
 	continue, break
 }
 scalar drop maxyear23
-summ year if wbcode=="`ctry'" & loggdppc2!=. & s_debt!=.
+summ year if wbcode=="`ctry'" & loggdppc2!=. & s_debt_r!=.
 scalar maxyear23=r(max)
 local maxyear23: display %9.0f maxyear23
 
@@ -1427,6 +1442,117 @@ drop if year!=`=maxyear23'
 
 if `=maxyear23'!=. {
 	* Statistics for Figure 23
+	* Deciles
+	foreach x in s_debt_r loggdppc2 {
+		xtile pct=`x' if `x'!=., nq(10)
+		summ pct if wbcode=="`ctry'"
+		scalar pct_`x'=r(mean)
+		local pct_`x': display %9.1fc pct_`x'
+		drop pct
+		}
+	* Ranks
+	foreach x in s_debt_r loggdppc2 {
+		count if `x'!=.
+		scalar n_`x'=r(N)
+		xtile rank=1/`x' if `x'!=., nq(`=n_`x'')
+		summ rank if wbcode=="`ctry'"
+		scalar rank_`x'=r(mean)
+		drop rank
+		}
+		
+	* Figure 23
+	lpoly s_debt_r loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
+	*/ title("Short-term debt to reserves vs. GDP per capita, `=maxyear23'") subtitle("`j'") /*
+	*/ note("Note: Short-term debt includes all debt having an original maturity of one year or less and interest" /*
+	*/ "in arrears on long-term debt." "Data source: World Development Indicators") /*
+	*/ ytitle("Short-term debt (% of total reserves)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
+	*/ addplot(scatter s_debt_r loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
+	*/ scatter s_debt_r loggdppc2 if region==`=region`ctry'', mlabel(wbcode) mlabsize(vsmall) mcolor(orange) mlabcolor(orange) || /*
+	*/ scatter s_debt_r loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
+	
+	* Exporting results into word document
+	gr export "$dir\figure23`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure23`ctry'_4.png") append
+	
+	* How many s.d. is the country from the fitted value?
+	gen diff=(s_debt_r-pred)/se
+	summ diff if wbcode=="`ctry'"
+	scalar diff_s_debt_r=r(mean)
+	drop pred se diff
+}
+restore
+
+**************************************************************
+** SHORT-TERM EXTERNAL DEBT (% EXTERNAL DEBT) (TIME SERIES) **
+**************************************************************
+rename DT_DOD_DSTC_ZS s_debt
+preserve
+
+* Statistics for Figure 24
+summ year if wbcode=="`ctry'" & s_debt!=.
+* Minimum
+scalar minyear24=r(min)
+local minyear24: display %9.0fc minyear24
+*Maximum
+scalar maxyear24=r(max)
+local maxyear24: display %9.0fc maxyear24
+* Max/Min variable
+summ s_debt if wbcode=="`ctry'" & year>=`=`=maxyear24'-20'
+scalar max_s_debt=r(max)
+gen max_s_debt=`=max_s_debt' if wbcode=="`ctry'"
+scalar min_s_debt=r(min)
+gen min_s_debt=`=min_s_debt' if wbcode=="`ctry'"
+
+* Figure 24
+if `=minyear24'<`=`=maxyear24'-20' {
+	twoway connect s_debt year if wbcode=="`ctry'" & year>=`=`=maxyear24'-20', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear24'-20', lcolor(gs8) legend(off) || /*
+	*/ spike min_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear24'-20', lcolor(gs8) legend(off) /*
+	*/ ytitle("Short-term debt (% of total external debt)") /*
+	*/ title("Short-term external debt, `=`=maxyear24'-20'-`=maxyear24'") subtitle("`j'") /*
+	*/ note("Note: Short-term debt includes all debt having an original maturity of one year or less and interest" /*
+	*/ "in arrears on long-term debt." "Data source: World Development Indicators")
+}
+else {
+	twoway connect s_debt year if wbcode=="`ctry'" & year>=`=minyear24', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear24', lcolor(gs8) legend(off) || /*
+	*/ spike min_s_debt year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear24', lcolor(gs8) legend(off) /*
+	*/ ytitle("Short-term debt (% of total external debt)") /*
+	*/ title("Short-term external debt, `=minyear24'-`=maxyear24'") subtitle("`j'") /*
+	*/ note("Note: Short-term debt includes all debt having an original maturity of one year or less and interest" /*
+	*/ "in arrears on long-term debt." "Data source: World Development Indicators")
+}
+
+* Exporting results into word document
+gr export "$dir\figure24`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure24`ctry'_4.png") append
+
+restore
+
+*****************************************************************
+** SSHORT-TERM EXTERNAL DEBT (% EXTERNAL DEBT) (CROSS-SECTION) **
+*****************************************************************
+preserve
+
+* Maximum years
+forval x=2013(-1)1960 {
+	summ year if loggdppc2!=. & s_debt!=.
+	scalar maxyear25=r(max)
+	bys year: count if loggdppc2!=. & s_debt!=.
+	if r(N)>=30 {
+		keep if year==`=maxyear25'
+	}
+	continue, break
+}
+scalar drop maxyear25
+summ year if wbcode=="`ctry'" & loggdppc2!=. & s_debt!=.
+scalar maxyear25=r(max)
+local maxyear25: display %9.0f maxyear25
+
+drop if year!=`=maxyear25'
+
+if `=maxyear25'!=. {
+	* Statistics for Figure 25
 	* Deciles
 	foreach x in s_debt loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -1445,9 +1571,9 @@ if `=maxyear23'!=. {
 		drop rank
 		}
 		
-	* Figure 23
+	* Figure 25
 	lpoly s_debt loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Short-term debt vs. GDP per capita, `=maxyear23'") subtitle("`j'") /*
+	*/ title("Short-term debt vs. GDP per capita, `=maxyear25'") subtitle("`j'") /*
 	*/ note("Note: Short-term debt includes all debt having an original maturity of one year or less and interest" /*
 	*/ "in arrears on long-term debt." "Data source: World Development Indicators") /*
 	*/ ytitle("Short-term debt (% of total external debt)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
@@ -1456,8 +1582,8 @@ if `=maxyear23'!=. {
 	*/ scatter s_debt loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure23`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure23`ctry'_4.png") append
+	gr export "$dir\figure25`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure25`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(s_debt-pred)/se
@@ -1470,12 +1596,12 @@ restore
 ***********************************
 ** EXTERNAL DEBT/TOTAL (TIME SERIES) **
 ***********************************
-* 24
+* 26
 
 ***********************************
 ** EXTERNAL DEBT/TOTAL (CROSS-SECTION) **
 ***********************************
-* 25
+* 27
 
 *********************************************************
 ** AVERAGE MATURITY OF NEW EXTERNAL DEBT (TIME SERIES) **
@@ -1483,42 +1609,42 @@ restore
 rename DT_MAT_DPPG debt_mat
 preserve
 
-* Statistics for Figure 26
+* Statistics for Figure 28
 summ year if wbcode=="`ctry'" & debt_mat!=.
 * Minimum
-scalar minyear26=r(min)
-local minyear26: display %9.0fc minyear26
+scalar minyear28=r(min)
+local minyear28: display %9.0fc minyear28
 *Maximum
-scalar maxyear26=r(max)
-local maxyear26: display %9.0fc maxyear26
+scalar maxyear28=r(max)
+local maxyear28: display %9.0fc maxyear28
 * Max/Min variable
-summ debt_mat if wbcode=="`ctry'" & year>=`=`=maxyear26'-20'
+summ debt_mat if wbcode=="`ctry'" & year>=`=`=maxyear28'-20'
 scalar max_debt_mat=r(max)
 gen max_debt_mat=`=max_debt_mat' if wbcode=="`ctry'"
 scalar min_debt_mat=r(min)
 gen min_debt_mat=`=min_debt_mat' if wbcode=="`ctry'"
 
-* Figure 26
-if `=minyear26'<`=`=maxyear26'-20' {
-	twoway connect debt_mat year if wbcode=="`ctry'" & year>=`=`=maxyear26'-20', lcolor(cranberry) lwidth(medthick) ||/*
-	*/ spike max_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear26'-20', lcolor(gs8) legend(off) || /*
-	*/ spike min_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear26'-20', lcolor(gs8) legend(off) /*
+* Figure 28
+if `=minyear28'<`=`=maxyear28'-20' {
+	twoway connect debt_mat year if wbcode=="`ctry'" & year>=`=`=maxyear28'-20', lcolor(cranberry) lwidth(medthick) ||/*
+	*/ spike max_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear28'-20', lcolor(gs8) legend(off) || /*
+	*/ spike min_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear28'-20', lcolor(gs8) legend(off) /*
 	*/ ytitle("Average maturity on new external debt commitments (years)") /*
-	*/ title("Average maturity on new external debt, `=`=maxyear26'-20'-`=maxyear26'") subtitle("`j'") /*
+	*/ title("Average maturity on new external debt, `=`=maxyear28'-20'-`=maxyear28'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 else {
-	twoway connect debt_mat year if wbcode=="`ctry'" & year>=`=minyear26', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear26', lcolor(gs8) legend(off) || /*
-	*/ spike min_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear26', lcolor(gs8) legend(off) /*
+	twoway connect debt_mat year if wbcode=="`ctry'" & year>=`=minyear28', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear28', lcolor(gs8) legend(off) || /*
+	*/ spike min_debt_mat year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear28', lcolor(gs8) legend(off) /*
 	*/ ytitle("Average maturity on new external debt commitments (years)") /*
-	*/ title("Average maturity on new external debt, `=minyear26'-`=maxyear26'") subtitle("`j'") /*
+	*/ title("Average maturity on new external debt, `=minyear28'-`=maxyear28'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 
 * Exporting results into word document
-gr export "$dir\figure26`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure26`ctry'_4.png") append
+gr export "$dir\figure28`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure28`ctry'_4.png") append
 
 restore
 
@@ -1530,22 +1656,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & debt_mat!=.
-	scalar maxyear27=r(max)
+	scalar maxyear29=r(max)
 	bys year: count if loggdppc2!=. & debt_mat!=.
 	if r(N)>=30 {
-		keep if year==`=maxyear27'
+		keep if year==`=maxyear29'
 	}
 	continue, break
 }
-scalar drop maxyear27
+scalar drop maxyear29
 summ year if wbcode=="`ctry'" & loggdppc2!=. & debt_mat!=.
-scalar maxyear27=r(max)
-local maxyear27: display %9.0f maxyear27
+scalar maxyear29=r(max)
+local maxyear29: display %9.0f maxyear29
 
-drop if year!=`=maxyear27'
+drop if year!=`=maxyear29'
 
-if `=maxyear27'!=. {
-	* Statistics for Figure 27
+if `=maxyear29'!=. {
+	* Statistics for Figure 29
 	* Deciles
 	foreach x in debt_mat loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -1564,9 +1690,9 @@ if `=maxyear27'!=. {
 		drop rank
 		}
 		
-	* Figure 27
+	* Figure 29
 	lpoly debt_mat loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Average maturity on new external debt vs. GDP per capita") subtitle("`=maxyear27', `j'") /*
+	*/ title("Average maturity on new external debt vs. GDP per capita") subtitle("`=maxyear29', `j'") /*
 	*/ note("Data source: World Development Indicators") /*
 	*/ ytitle("Average maturity on new external debt" "commitments (years)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter debt_mat loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -1574,8 +1700,8 @@ if `=maxyear27'!=. {
 	*/ scatter debt_mat loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure27`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure27`ctry'_4.png") append
+	gr export "$dir\figure29`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure29`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(debt_mat-pred)/se
@@ -1597,42 +1723,42 @@ gen c_a=(BN_CAB_XOKA_CD*100)/NY_GDP_MKTP_CD
 label var c_a "CA balance (% of GDP)"
 preserve
 
-* Statistics for Figure 28
+* Statistics for Figure 30
 summ year if wbcode=="`ctry'" & c_a!=.
 * Minimum
-scalar minyear28=r(min)
-local minyear28: display %9.0fc minyear28
+scalar minyear30=r(min)
+local minyear30: display %9.0fc minyear30
 *Maximum
-scalar maxyear28=r(max)
-local maxyear28: display %9.0fc maxyear28
+scalar maxyear30=r(max)
+local maxyear30: display %9.0fc maxyear30
 * Max/Min variable
-summ c_a if wbcode=="`ctry'" & year>=`=`=maxyear28'-20'
+summ c_a if wbcode=="`ctry'" & year>=`=`=maxyear30'-20'
 scalar max_c_a=r(max)
 gen max_c_a=`=max_c_a' if wbcode=="`ctry'"
 scalar min_c_a=r(min)
 gen min_c_a=`=min_c_a' if wbcode=="`ctry'"
 
-* Figure 28
-if `=minyear28'<`=`=maxyear28'-20' {
-	twoway area c_a year if wbcode=="`ctry'" & year>=`=`=maxyear28'-20', lwidth(medthick) || /*
-	*/ spike max_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear28'-20', lcolor(gs8) legend(off) || /*
-	*/ spike min_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear28'-20', lcolor(gs8) legend(off) /*
+* Figure 30
+if `=minyear30'<`=`=maxyear30'-20' {
+	twoway area c_a year if wbcode=="`ctry'" & year>=`=`=maxyear30'-20', lwidth(medthick) || /*
+	*/ spike max_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear30'-20', lcolor(gs8) legend(off) || /*
+	*/ spike min_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear30'-20', lcolor(gs8) legend(off) /*
 	*/ ytitle("Current account balance (% of GDP)") /*
-	*/ title("Current account balance, `=`=maxyear28'-20'-`=maxyear28'") subtitle("`j'") /*
+	*/ title("Current account balance, `=`=maxyear30'-20'-`=maxyear30'") subtitle("`j'") /*
 	*/ note("Data source: International Debt Statistics and World Development Indicators")
 }
 else {
-	twoway area c_a year if wbcode=="`ctry'" & year>=`=minyear28', lwidth(medthick) || /*
-	*/ spike max_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear28', lcolor(gs8) legend(off) || /*
-	*/ spike min_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear28', lcolor(gs8) legend(off) /*
+	twoway area c_a year if wbcode=="`ctry'" & year>=`=minyear30', lwidth(medthick) || /*
+	*/ spike max_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear30', lcolor(gs8) legend(off) || /*
+	*/ spike min_c_a year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear30', lcolor(gs8) legend(off) /*
 	*/ ytitle("Current account balance (% of GDP)") /*
-	*/ title("Current account balance, `=minyear28'-`=maxyear28'") subtitle("`j'") /*
+	*/ title("Current account balance, `=minyear30'-`=maxyear30'") subtitle("`j'") /*
 	*/ note("Data source: International Debt Statistics and World Development Indicators")
 }
 
 * Exporting results into word document
-gr export "$dir\figure28`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure25`ctry'_4.png") append
+gr export "$dir\figure30`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure30`ctry'_4.png") append
 
 restore
 
@@ -1644,22 +1770,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & c_a!=.
-	scalar maxyear29=r(max)
+	scalar maxyear31=r(max)
 	bys year: count if loggdppc2!=. & c_a!=.
 	if r(N)>=30 {
-		keep if year==`=maxyear29'
+		keep if year==`=maxyear31'
 	}
 	continue, break
 }
-scalar drop maxyear29
+scalar drop maxyear31
 summ year if wbcode=="`ctry'" & loggdppc2!=. & c_a!=.
-scalar maxyear29=r(max)
-local maxyear29: display %9.0f maxyear29
+scalar maxyear31=r(max)
+local maxyear31: display %9.0f maxyear31
 
-drop if year!=`=maxyear29'
+drop if year!=`=maxyear31'
 
-if `=maxyear29'!=. {
-	* Statistics for Figure 29
+if `=maxyear31'!=. {
+	* Statistics for Figure 31
 	* Deciles
 	foreach x in c_a loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -1678,9 +1804,9 @@ if `=maxyear29'!=. {
 		drop rank
 		}
 		
-	* Figure 29
+	* Figure 31
 	lpoly c_a loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Current account balance vs. GDP per capita, `=maxyear29'") subtitle("`j'") /*
+	*/ title("Current account balance vs. GDP per capita, `=maxyear31'") subtitle("`j'") /*
 	*/ note("Data source: International Debt Statistics and World Development Indicators") /*
 	*/ ytitle("Current account balance (% of GDP)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter c_a loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -1688,8 +1814,8 @@ if `=maxyear29'!=. {
 	*/ scatter c_a loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure29`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure29`ctry'_4.png") append
+	gr export "$dir\figure31`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure31`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(c_a-pred)/se
@@ -1705,50 +1831,50 @@ restore
 rename NY_GDP_PCAP_KD_ZG growth
 preserve
 
-* Statistics for Figure 30
+* Statistics for Figure 32
 summ year if wbcode=="`ctry'" & c_a!=. & growth!=.
 * Minimum
-scalar minyear30=r(min)
-local minyear30: display %9.0fc minyear30
+scalar minyear32=r(min)
+local minyear32: display %9.0fc minyear32
 *Maximum
-scalar maxyear30=r(max)
-local maxyear30: display %9.0fc maxyear30
+scalar maxyear32=r(max)
+local maxyear32: display %9.0fc maxyear32
 * Max/Min variable
-summ growth if wbcode=="`ctry'" & year>=`=`=maxyear30'-20'
+summ growth if wbcode=="`ctry'" & year>=`=`=maxyear32'-20'
 scalar max_growth=r(max)
 gen max_growth=`=max_growth' if wbcode=="`ctry'"
-gen max_30=max(max_growth,max_c_a) if wbcode=="`ctry'"
+gen max_32=max(max_growth,max_c_a) if wbcode=="`ctry'"
 scalar min_growth=r(min)
 gen min_growth=`=min_growth' if wbcode=="`ctry'"
-gen min_30=min(min_growth,min_c_a) if wbcode=="`ctry'"
+gen min_32=min(min_growth,min_c_a) if wbcode=="`ctry'"
 
-* Figure 30
-if `=minyear30'<`=`=maxyear30'-20' {
-	twoway connect c_a year if wbcode=="`ctry'" & year>=`=`=maxyear30'-20', lwidth(medthick) || /*
-	*/ connect growth year if wbcode=="`ctry'" & year>=`=`=maxyear30'-20', lwidth(medthick) || /*
-	*/ spike max_30 year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear30'-20', lcolor(gs8) || /*
-	*/ spike min_30 year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear30'-20', lcolor(gs8) /*
+* Figure 32
+if `=minyear32'<`=`=maxyear32'-20' {
+	twoway connect c_a year if wbcode=="`ctry'" & year>=`=`=maxyear32'-20', lwidth(medthick) || /*
+	*/ connect growth year if wbcode=="`ctry'" & year>=`=`=maxyear32'-20', lwidth(medthick) || /*
+	*/ spike max_32 year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear32'-20', lcolor(gs8) || /*
+	*/ spike min_32 year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear32'-20', lcolor(gs8) /*
 	*/ legend(order(1 "CA balance (% of GDP)" 2 "GDP per capita growth (annual %)")) /*
 	*/ ytitle("Percentage") /*
-	*/ title("Current account balance vs. Economic growth, `=`=maxyear30'-20'-`=maxyear30'") subtitle("`j'") /*
+	*/ title("Current account balance vs. Economic growth, `=`=maxyear32'-20'-`=maxyear32'") subtitle("`j'") /*
 	*/ note("Note: Annual percentage growth rate of GDP per capita based on constant local currency" /*
 	*/ "Data source: International Debt Statistics and World Development Indicators")
 }
 else {
-	twoway connect c_a year if wbcode=="`ctry'" & year>=`=minyear30', lwidth(medthick) || /*
-	*/ connect growth year if wbcode=="`ctry'" & year>=`=minyear30', lwidth(medthick) || /*
-	*/ spike max_30 year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear30', lcolor(gs8) || /*
-	*/ spike min_30 year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear30', lcolor(gs8) /*
+	twoway connect c_a year if wbcode=="`ctry'" & year>=`=minyear32', lwidth(medthick) || /*
+	*/ connect growth year if wbcode=="`ctry'" & year>=`=minyear32', lwidth(medthick) || /*
+	*/ spike max_32 year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear32', lcolor(gs8) || /*
+	*/ spike min_32 year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear32', lcolor(gs8) /*
 	*/ legend(order(1 "CA balance (% of GDP)" 2 "GDP per capita growth (annual %)")) /*
 	*/ ytitle("Percentage") /*
-	*/ title("Current account balance vs. Economic growth, `=`=maxyear30'-20'-`=maxyear30'") subtitle("`j'") /*
+	*/ title("Current account balance vs. Economic growth, `=`=maxyear32'-20'-`=maxyear32'") subtitle("`j'") /*
 	*/ note("Note: Annual percentage growth rate of GDP per capita based on constant local currency" /*
 	*/ "Data source: International Debt Statistics and World Development Indicators")
 }
 
 * Exporting results into word document
-gr export "$dir\figure30`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure30`ctry'_4.png") append
+gr export "$dir\figure32`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure32`ctry'_4.png") append
 
 restore
 
@@ -1763,29 +1889,32 @@ drop _merge
 sort wbcode year
 preserve
 
+* WARNING: ELIMINATION OF ZIMBABWE BECAUSE IT HAS A "TOO VOLATILE" EXCHANGE RATE
+drop if wbcode=="ZWE"
+
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & rex!=.
-	scalar maxyear31=r(max)
+	scalar maxyear33=r(max)
 	bys year: count if loggdppc2!=. & rex!=.
 	if r(N)<30 {
-		drop if year==`=maxyear31'
+		drop if year==`=maxyear33'
 	}
 	continue, break
 }
-scalar drop maxyear31
+scalar drop maxyear33
 summ year if wbcode=="`ctry'" & loggdppc2!=. & rex!=.
-scalar maxyear31=r(max)
-local maxyear31: display %9.0f maxyear31
+scalar maxyear33=r(max)
+local maxyear33: display %9.0f maxyear33
 
-drop if year<`=`=maxyear31'-10'
+if `=maxyear33'!=. {
+drop if year<`=`=maxyear33'-10'
 bys wbcode: egen rex_sd=sd(rex)
 bys wbcode: egen rex_mean=mean(rex)
-drop if year!=`=maxyear31'
+drop if year!=`=maxyear33'
 gen rex_vol=rex_sd/rex_mean
 
-if `=maxyear31'!=. {
-	* Statistics for Figure 31
+	* Statistics for Figure 33
 	* Deciles
 	foreach x in rex_vol loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -1804,19 +1933,19 @@ if `=maxyear31'!=. {
 		drop rank
 		}
 
-	* Figure 31
+	* Figure 33
 	lpoly rex_vol loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Real exchange rate volatility vs. GDP per capita, `=maxyear31'") subtitle("`j'") /*
+	*/ title("Real exchange rate volatility vs. GDP per capita, `=maxyear33'") subtitle("`j'") /*
 	*/ note("Data source: Economist Intelligence Unit and World Development Indicators") /*
-	*/ ytitle("Coefficient of variation of" "the real exchange rate), `=`=maxyear31'-10'-`=maxyear31'") /*
+	*/ ytitle("Coefficient of variation of" "the real exchange rate), `=`=maxyear33'-10'-`=maxyear33'") /*
 	*/ xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter rex_vol loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
 	*/ scatter rex_vol loggdppc2 if region==`=region`ctry'', mlabel(wbcode) mlabsize(vsmall) mcolor(orange) mlabcolor(orange) || /*
 	*/ scatter rex_vol loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure31`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure31`ctry'_4.png") append
+	gr export "$dir\figure33`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure33`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(rex_vol-pred)/se
@@ -1836,42 +1965,42 @@ restore
 rename FR_INR_LNDP spread
 preserve
 
-* Statistics for Figure 32
+* Statistics for Figure 34
 summ year if wbcode=="`ctry'" & spread!=.
 * Minimum
-scalar minyear32=r(min)
-local minyear32: display %9.0fc minyear32
+scalar minyear34=r(min)
+local minyear34: display %9.0fc minyear34
 *Maximum
-scalar maxyear32=r(max)
-local maxyear32: display %9.0fc maxyear32
+scalar maxyear34=r(max)
+local maxyear34: display %9.0fc maxyear34
 * Max/Min variable
-summ spread if wbcode=="`ctry'" & year>=`=`=maxyear32'-15'
+summ spread if wbcode=="`ctry'" & year>=`=`=maxyear34'-15'
 scalar max_spread=r(max)
 gen max_spread=`=max_spread' if wbcode=="`ctry'"
 scalar min_spread=r(min)
 gen min_spread=`=min_spread' if wbcode=="`ctry'"
 
-* Figure 32
-if `=minyear32'<`=`=maxyear32'-15' {
-	twoway connect spread year if wbcode=="`ctry'" & year>=`=`=maxyear32'-15', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_spread year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear32'-15', lcolor(gs8) legend(off) || /*
-	*/ spike min_spread year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear32'-15', lcolor(gs8) legend(off) /*
+* Figure 34
+if `=minyear34'<`=`=maxyear34'-15' {
+	twoway connect spread year if wbcode=="`ctry'" & year>=`=`=maxyear34'-15', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_spread year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear34'-15', lcolor(gs8) legend(off) || /*
+	*/ spike min_spread year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear34'-15', lcolor(gs8) legend(off) /*
 	*/ ytitle("Interest rate spread (lending rate minus deposit rate, %)") /*
-	*/ title("Interest rate spread, `=`=maxyear32'-15'-`=maxyear32'") subtitle("`j'") /*
+	*/ title("Interest rate spread, `=`=maxyear34'-15'-`=maxyear34'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 else {
-	twoway connect spread year if wbcode=="`ctry'" & year>=`=minyear32', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike spread year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear32', lcolor(gs8) legend(off) || /*
-	*/ spike spread year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear32', lcolor(gs8) legend(off) /*
+	twoway connect spread year if wbcode=="`ctry'" & year>=`=minyear34', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike spread year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear34', lcolor(gs8) legend(off) || /*
+	*/ spike spread year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear34', lcolor(gs8) legend(off) /*
 	*/ ytitle("Interest rate spread (lending rate minus deposit rate, %)") /*
-	*/ title("Interest rate spread, `=minyear32'-`=maxyear32'") subtitle("`j'") /*
+	*/ title("Interest rate spread, `=minyear34'-`=maxyear34'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 
 * Exporting results into word document
-gr export "$dir\figure32`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure32`ctry'_4.png") append
+gr export "$dir\figure34`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure34`ctry'_4.png") append
 
 restore
 
@@ -1883,22 +2012,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & spread!=.
-	scalar maxyear33=r(max)
+	scalar maxyear35=r(max)
 	bys year: count if loggdppc2!=. & spread!=.
-	if r(N)>=33 {
-		keep if year==`=maxyear33'
+	if r(N)>=30 {
+		keep if year==`=maxyear35'
 	}
 	continue, break
 }
-scalar drop maxyear33
+scalar drop maxyear35
 summ year if wbcode=="`ctry'" & loggdppc2!=. & spread!=.
-scalar maxyear33=r(max)
-local maxyear33: display %9.0f maxyear33
+scalar maxyear35=r(max)
+local maxyear35: display %9.0f maxyear35
 
-drop if year!=`=maxyear33'
+drop if year!=`=maxyear35'
 
-if `=maxyear33'!=. {
-	* Statistics for Figure 33
+if `=maxyear35'!=. {
+	* Statistics for Figure 35
 	* Deciles
 	foreach x in spread loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -1917,9 +2046,9 @@ if `=maxyear33'!=. {
 		drop rank
 		}
 		
-	* Figure 33
+	* Figure 35
 	lpoly spread loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Interest rate spread vs. GDP per capita, `=maxyear33'") subtitle("`j'") /*
+	*/ title("Interest rate spread vs. GDP per capita, `=maxyear35'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators") /*
 	*/ ytitle("Interest rate spread (lending rate minus deposit rate, %)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter spread loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -1927,8 +2056,8 @@ if `=maxyear33'!=. {
 	*/ scatter spread loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure33`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure33`ctry'_4.png") append
+	gr export "$dir\figure35`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure35`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(spread-pred)/se
@@ -1950,42 +2079,42 @@ drop _merge
 label var year "Year"
 preserve
 
-* Statistics for Figure 34
+* Statistics for Figure 36
 summ year if wbcode=="`ctry'" & overhead!=.
 * Minimum
-scalar minyear34=r(min)
-local minyear34: display %9.0fc minyear34
+scalar minyear36=r(min)
+local minyear36: display %9.0fc minyear36
 *Maximum
-scalar maxyear34=r(max)
-local maxyear34: display %9.0fc maxyear34
+scalar maxyear36=r(max)
+local maxyear36: display %9.0fc maxyear36
 * Max/Min variable
-summ overhead if wbcode=="`ctry'" & year>=`=`=maxyear34'-15'
+summ overhead if wbcode=="`ctry'" & year>=`=`=maxyear36'-15'
 scalar max_overhead=r(max)
 gen max_overhead=`=max_overhead' if wbcode=="`ctry'"
 scalar min_overhead=r(min)
 gen min_overhead=`=min_overhead' if wbcode=="`ctry'"
 
-* Figure 34
-if `=minyear34'<`=`=maxyear34'-15' {
-	twoway connect overhead year if wbcode=="`ctry'" & year>=`=`=maxyear34'-15', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear34'-15', lcolor(gs8) legend(off) || /*
-	*/ spike min_overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear34'-15', lcolor(gs8) legend(off) /*
+* Figure 36
+if `=minyear36'<`=`=maxyear36'-15' {
+	twoway connect overhead year if wbcode=="`ctry'" & year>=`=`=maxyear36'-15', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear36'-15', lcolor(gs8) legend(off) || /*
+	*/ spike min_overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear36'-15', lcolor(gs8) legend(off) /*
 	*/ ytitle("Bank overhead costs to total assets (%)") /*
-	*/ title("Overhad costs of banks, `=`=maxyear34'-15'-`=maxyear34'") subtitle("`j'") /*
+	*/ title("Overhad costs of banks, `=`=maxyear36'-15'-`=maxyear36'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank)")
 }
 else {
-	twoway connect overhead year if wbcode=="`ctry'" & year>=`=minyear34', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear34', lcolor(gs8) legend(off) || /*
-	*/ spike overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear34', lcolor(gs8) legend(off) /*
+	twoway connect overhead year if wbcode=="`ctry'" & year>=`=minyear36', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear36', lcolor(gs8) legend(off) || /*
+	*/ spike overhead year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear36', lcolor(gs8) legend(off) /*
 	*/ ytitle("Bank overhead costs to total assets (%)") /*
-	*/ title("Overhad costs of banks, `=minyear34'-`=maxyear34'") subtitle("`j'") /*
+	*/ title("Overhad costs of banks, `=minyear36'-`=maxyear36'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank)")
 }
 
 * Exporting results into word document
-gr export "$dir\figure34`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure34`ctry'_4.png") append
+gr export "$dir\figure36`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure36`ctry'_4.png") append
 
 restore
 
@@ -1997,22 +2126,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & overhead!=.
-	scalar maxyear35=r(max)
+	scalar maxyear37=r(max)
 	bys year: count if loggdppc2!=. & overhead!=.
 	if r(N)>=30 {
-		keep if year==`=maxyear35'
+		keep if year==`=maxyear37'
 	}
 	continue, break
 }
-scalar drop maxyear35
+scalar drop maxyear37
 summ year if wbcode=="`ctry'" & loggdppc2!=. & overhead!=.
-scalar maxyear35=r(max)
-local maxyear35: display %9.0f maxyear35
+scalar maxyear37=r(max)
+local maxyear37: display %9.0f maxyear37
 
-drop if year!=`=maxyear35'
+drop if year!=`=maxyear37'
 
-if `=maxyear35'!=. {
-	* Statistics for Figure 35
+if `=maxyear37'!=. {
+	* Statistics for Figure 37
 	* Deciles
 	foreach x in overhead loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -2031,9 +2160,9 @@ if `=maxyear35'!=. {
 		drop rank
 		}
 		
-	* Figure 35
+	* Figure 37
 	lpoly overhead loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Overhad costs of banks vs. GDP per capita, `=maxyear35'") subtitle("`j'") /*
+	*/ title("Overhad costs of banks vs. GDP per capita, `=maxyear37'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank) and World" "Development Indicators") /*
 	*/ ytitle("Bank overhead costs to total assets (%)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter overhead loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -2041,8 +2170,8 @@ if `=maxyear35'!=. {
 	*/ scatter overhead loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure35`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure35`ctry'_4.png") append
+	gr export "$dir\figure37`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure37`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(overhead-pred)/se
@@ -2058,42 +2187,42 @@ restore
 rename FD_RES_LIQU_AS_ZS reserve
 preserve
 
-* Statistics for Figure 36
+* Statistics for Figure 38
 summ year if wbcode=="`ctry'" & reserve!=.
 * Minimum
-scalar minyear36=r(min)
-local minyear36: display %9.0fc minyear36
+scalar minyear38=r(min)
+local minyear38: display %9.0fc minyear38
 *Maximum
-scalar maxyear36=r(max)
-local maxyear36: display %9.0fc maxyear36
+scalar maxyear38=r(max)
+local maxyear38: display %9.0fc maxyear38
 * Max/Min variable
-summ reserve if wbcode=="`ctry'" & year>=`=`=maxyear36'-15'
+summ reserve if wbcode=="`ctry'" & year>=`=`=maxyear38'-15'
 scalar max_reserve=r(max)
 gen max_reserve=`=max_reserve' if wbcode=="`ctry'"
 scalar min_reserve=r(min)
 gen min_reserve=`=min_reserve' if wbcode=="`ctry'"
 
-* Figure 36
-if `=minyear36'<`=`=maxyear36'-15' {
-	twoway connect reserve year if wbcode=="`ctry'" & year>=`=`=maxyear36'-15', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear36'-15', lcolor(gs8) legend(off) || /*
-	*/ spike min_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear36'-15', lcolor(gs8) legend(off) /*
+* Figure 38
+if `=minyear38'<`=`=maxyear38'-15' {
+	twoway connect reserve year if wbcode=="`ctry'" & year>=`=`=maxyear38'-15', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear38'-15', lcolor(gs8) legend(off) || /*
+	*/ spike min_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear38'-15', lcolor(gs8) legend(off) /*
 	*/ ytitle("Bank liquid reserves to bank assets ratio (%)") /*
-	*/ title("Bank reserves, `=`=maxyear36'-15'-`=maxyear36'") subtitle("`j'") /*
+	*/ title("Bank reserves, `=`=maxyear38'-15'-`=maxyear38'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 else {
-	twoway connect reserve year if wbcode=="`ctry'" & year>=`=minyear36', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear36', lcolor(gs8) legend(off) || /*
-	*/ spike min_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear36', lcolor(gs8) legend(off) /*
+	twoway connect reserve year if wbcode=="`ctry'" & year>=`=minyear38', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear38', lcolor(gs8) legend(off) || /*
+	*/ spike min_reserve year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear38', lcolor(gs8) legend(off) /*
 	*/ ytitle("Bank liquid reserves to bank assets ratio (%)") /*
-	*/ title("Bank reserves, `=minyear36'-`=maxyear36'") subtitle("`j'") /*
+	*/ title("Bank reserves, `=minyear38'-`=maxyear38'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 
 * Exporting results into word document
-gr export "$dir\figure36`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure36`ctry'_4.png") append
+gr export "$dir\figure38`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure38`ctry'_4.png") append
 
 restore
 
@@ -2105,22 +2234,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & reserve!=.
-	scalar maxyear37=r(max)
+	scalar maxyear39=r(max)
 	bys year: count if loggdppc2!=. & reserve!=.
 	if r(N)<30 {
-		drop if year==`=maxyear37'
+		drop if year==`=maxyear39'
 	}
 	continue, break
 }
-scalar drop maxyear37
+scalar drop maxyear39
 summ year if wbcode=="`ctry'" & loggdppc2!=. & reserve!=.
-scalar maxyear37=r(max)
-local maxyear37: display %9.0f maxyear37
+scalar maxyear39=r(max)
+local maxyear39: display %9.0f maxyear39
 
-drop if year!=`=maxyear37'
+drop if year!=`=maxyear39'
 
-if `=maxyear37'!=. {
-	* Statistics for Figure 37
+if `=maxyear39'!=. {
+	* Statistics for Figure 39
 	* Deciles
 	foreach x in reserve loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -2139,9 +2268,9 @@ if `=maxyear37'!=. {
 		drop rank
 		}
 		
-	* Figure 37
+	* Figure 39
 	lpoly reserve loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Bank reserves vs. GDP per capita, `=maxyear37'") subtitle("`j'") /*
+	*/ title("Bank reserves vs. GDP per capita, `=maxyear39'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators") /*
 	*/ ytitle("Bank liquid reserves to bank assets ratio (%)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter reserve loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -2149,8 +2278,8 @@ if `=maxyear37'!=. {
 	*/ scatter reserve loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure37`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure37`ctry'_4.png") append
+	gr export "$dir\figure39`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure39`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(reserve-pred)/se
@@ -2166,42 +2295,42 @@ restore
 **************************************
 preserve
 
-* Statistics for Figure 38
+* Statistics for Figure 40
 summ year if wbcode=="`ctry'" & concentration!=.
 * Minimum
-scalar minyear38=r(min)
-local minyear38: display %9.0fc minyear38
+scalar minyear40=r(min)
+local minyear40: display %9.0fc minyear40
 *Maximum
-scalar maxyear38=r(max)
-local maxyear38: display %9.0fc maxyear38
+scalar maxyear40=r(max)
+local maxyear40: display %9.0fc maxyear40
 * Max/Min variable
-summ concentration if wbcode=="`ctry'" & year>=`=`=maxyear38'-15'
+summ concentration if wbcode=="`ctry'" & year>=`=`=maxyear40'-15'
 scalar max_concentration=r(max)
 gen max_concentration=`=max_concentration' if wbcode=="`ctry'"
 scalar min_concentration=r(min)
 gen min_concentration=`=min_concentration' if wbcode=="`ctry'"
 
-* Figure 38
-if `=minyear38'<`=`=maxyear38'-15' {
-	twoway connect concentration year if wbcode=="`ctry'" & year>=`=`=maxyear38'-15', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear38'-15', lcolor(gs8) legend(off) || /*
-	*/ spike min_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear38'-15', lcolor(gs8) legend(off) /*
+* Figure 40
+if `=minyear40'<`=`=maxyear40'-15' {
+	twoway connect concentration year if wbcode=="`ctry'" & year>=`=`=maxyear40'-15', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear40'-15', lcolor(gs8) legend(off) || /*
+	*/ spike min_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear40'-15', lcolor(gs8) legend(off) /*
 	*/ ytitle("Assets of 3 largest banks as % of assets of" "all commercial banks") /*
-	*/ title("Bank concentration, `=`=maxyear38'-15'-`=maxyear38'") subtitle("`j'") /*
+	*/ title("Bank concentration, `=`=maxyear40'-15'-`=maxyear40'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank)")
 }
 else {
-	twoway connect concentration year if wbcode=="`ctry'" & year>=`=minyear38', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear38', lcolor(gs8) legend(off) || /*
-	*/ spike min_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear38', lcolor(gs8) legend(off) /*
+	twoway connect concentration year if wbcode=="`ctry'" & year>=`=minyear40', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear40', lcolor(gs8) legend(off) || /*
+	*/ spike min_concentration year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear40', lcolor(gs8) legend(off) /*
 	*/ ytitle("Assets of 3 largest banks as % of assets of" "all commercial banks") /*
-	*/ title("Bank concentration, `=minyear38'-`=maxyear38'") subtitle("`j'") /*
+	*/ title("Bank concentration, `=minyear40'-`=maxyear40'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank)")
 }
 
 * Exporting results into word document
-gr export "$dir\figure38`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure38`ctry'_4.png") append
+gr export "$dir\figure40`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure40`ctry'_4.png") append
 
 restore
 
@@ -2213,22 +2342,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & concentration!=.
-	scalar maxyear39=r(max)
+	scalar maxyear41=r(max)
 	bys year: count if loggdppc2!=. & concentration!=.
 	if r(N)<30 {
-		drop if year==`=maxyear39'
+		drop if year==`=maxyear41'
 	}
 	continue, break
 }
-scalar drop maxyear39
+scalar drop maxyear41
 summ year if wbcode=="`ctry'" & loggdppc2!=. & concentration!=.
-scalar maxyear39=r(max)
-local maxyear39: display %9.0f maxyear39
+scalar maxyear41=r(max)
+local maxyear41: display %9.0f maxyear41
 
-drop if year!=`=maxyear39'
+drop if year!=`=maxyear41'
 
-if `=maxyear39'!=. {
-	* Statistics for Figure 39
+if `=maxyear41'!=. {
+	* Statistics for Figure 41
 	* Deciles
 	foreach x in concentration loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -2247,9 +2376,9 @@ if `=maxyear39'!=. {
 		drop rank
 		}
 		
-	* Figure 39
+	* Figure 41
 	lpoly concentration loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Bank concentration vs. GDP per capita, `=maxyear39'") subtitle("`j'") /*
+	*/ title("Bank concentration vs. GDP per capita, `=maxyear41'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank) and World" "Development Indicators") /*
 	*/ ytitle("Assets of 3 largest banks as % of assets of" "all commercial banks") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter concentration loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -2257,8 +2386,8 @@ if `=maxyear39'!=. {
 	*/ scatter concentration loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure39`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure39`ctry'_4.png") append
+	gr export "$dir\figure41`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure41`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(concentration-pred)/se
@@ -2273,42 +2402,42 @@ restore
 ********************************************
 preserve
 
-* Statistics for Figure 40
+* Statistics for Figure 42
 summ year if wbcode=="`ctry'" & roa!=.
 * Minimum
-scalar minyear40=r(min)
-local minyear40: display %9.0fc minyear40
+scalar minyear42=r(min)
+local minyear42: display %9.0fc minyear42
 *Maximum
-scalar maxyear40=r(max)
-local maxyear40: display %9.0fc maxyear40
+scalar maxyear42=r(max)
+local maxyear42: display %9.0fc maxyear42
 * Max/Min variable
-summ roa if wbcode=="`ctry'" & year>=`=`=maxyear40'-15'
+summ roa if wbcode=="`ctry'" & year>=`=`=maxyear42'-15'
 scalar max_roa=r(max)
 gen max_roa=`=max_roa' if wbcode=="`ctry'"
 scalar min_roa=r(min)
 gen min_roa=`=min_roa' if wbcode=="`ctry'"
 
-* Figure 40
-if `=minyear40'<`=`=maxyear40'-15' {
-	twoway connect roa year if wbcode=="`ctry'" & year>=`=`=maxyear40'-15', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear40'-15', lcolor(gs8) legend(off) || /*
-	*/ spike min_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear40'-15', lcolor(gs8) legend(off) /*
+* Figure 42
+if `=minyear42'<`=`=maxyear42'-15' {
+	twoway connect roa year if wbcode=="`ctry'" & year>=`=`=maxyear42'-15', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear42'-15', lcolor(gs8) legend(off) || /*
+	*/ spike min_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear42'-15', lcolor(gs8) legend(off) /*
 	*/ ytitle("Average Return on Assets (Net Income/Total Assets)") /*
-	*/ title("Banks ROA, `=`=maxyear40'-15'-`=maxyear40'") subtitle("`j'") /*
+	*/ title("Banks ROA, `=`=maxyear42'-15'-`=maxyear42'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank)")
 }
 else {
-	twoway connect roa year if wbcode=="`ctry'" & year>=`=minyear40', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear40', lcolor(gs8) legend(off) || /*
-	*/ spike min_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear40', lcolor(gs8) legend(off) /*
+	twoway connect roa year if wbcode=="`ctry'" & year>=`=minyear42', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear42', lcolor(gs8) legend(off) || /*
+	*/ spike min_roa year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear42', lcolor(gs8) legend(off) /*
 	*/ ytitle("Average Return on Assets (Net Income/Total Assets)") /*
-	*/ title("Banks ROA, `=minyear40'-`=maxyear40'") subtitle("`j'") /*
+	*/ title("Banks ROA, `=minyear42'-`=maxyear42'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank)")
 }
 
 * Exporting results into word document
-gr export "$dir\figure40`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure40`ctry'_4.png") append
+gr export "$dir\figure42`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure42`ctry'_4.png") append
 
 restore
 
@@ -2320,22 +2449,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & roa!=.
-	scalar maxyear41=r(max)
+	scalar maxyear43=r(max)
 	bys year: count if loggdppc2!=. & roa!=.
 	if r(N)>=30 {
-		keep if year==`=maxyear41'
+		keep if year==`=maxyear43'
 	}
 	continue, break
 }
-scalar drop maxyear41
+scalar drop maxyear43
 summ year if wbcode=="`ctry'" & loggdppc2!=. & roa!=.
-scalar maxyear41=r(max)
-local maxyear41: display %9.0f maxyear41
+scalar maxyear43=r(max)
+local maxyear43: display %9.0f maxyear43
 
-drop if year!=`=maxyear41'
+drop if year!=`=maxyear43'
 
-if `=maxyear41'!=. {
-	* Statistics for Figure 41
+if `=maxyear43'!=. {
+	* Statistics for Figure 43
 	* Deciles
 	foreach x in roa loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -2354,9 +2483,9 @@ if `=maxyear41'!=. {
 		drop rank
 		}
 		
-	* Figure 41
+	* Figure 43
 	lpoly roa loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Banks ROA vs. GDP per capita, `=maxyear41'") subtitle("`j'") /*
+	*/ title("Banks ROA vs. GDP per capita, `=maxyear43'") subtitle("`j'") /*
 	*/ note("Data source: Financial Development and Structure Dataset (World Bank) and World" "Development Indicators") /*
 	*/ ytitle("Average Return on Assets (Net Income/Total Assets)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter roa loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -2364,8 +2493,8 @@ if `=maxyear41'!=. {
 	*/ scatter roa loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure41`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure41`ctry'_4.png") append
+	gr export "$dir\figure43`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure43`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(roa-pred)/se
@@ -2381,42 +2510,42 @@ restore
 rename IC_FRM_BNKS_ZS firms_banks
 preserve
 
-* Statistics for Figure 42
+* Statistics for Figure 44
 summ year if wbcode=="`ctry'" & firms_banks!=.
 * Minimum
-scalar minyear42=r(min)
-local minyear42: display %9.0fc minyear42
+scalar minyear44=r(min)
+local minyear44: display %9.0fc minyear44
 *Maximum
-scalar maxyear42=r(max)
-local maxyear42: display %9.0fc maxyear42
+scalar maxyear44=r(max)
+local maxyear44: display %9.0fc maxyear44
 * Max/Min variable
-summ firms_banks if wbcode=="`ctry'" & year>=`=`=maxyear42'-15'
+summ firms_banks if wbcode=="`ctry'" & year>=`=`=maxyear44'-15'
 scalar max_firms_banks=r(max)
 gen max_firms_banks=`=max_firms_banks' if wbcode=="`ctry'"
 scalar min_firms_banks=r(min)
 gen min_firms_banks=`=min_firms_banks' if wbcode=="`ctry'"
 
-* Figure 42
-if `=minyear42'<`=`=maxyear42'-15' {
-	twoway connect firms_banks year if wbcode=="`ctry'" & year>=`=`=maxyear42'-15', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear42'-15', lcolor(gs8) legend(off) || /*
-	*/ spike min_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear42'-15', lcolor(gs8) legend(off) /*
+* Figure 44
+if `=minyear44'<`=`=maxyear44'-15' {
+	twoway connect firms_banks year if wbcode=="`ctry'" & year>=`=`=maxyear44'-15', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear44'-15', lcolor(gs8) legend(off) || /*
+	*/ spike min_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=`=maxyear44'-15', lcolor(gs8) legend(off) /*
 	*/ ytitle("Firms using banks to finance investment (% of firms)") /*
-	*/ title("Firms using banks, `=`=maxyear42'-15'-`=maxyear42'") subtitle("`j'") /*
+	*/ title("Firms using banks, `=`=maxyear44'-15'-`=maxyear44'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 else {
-	twoway connect firms_banks year if wbcode=="`ctry'" & year>=`=minyear42', lcolor(cranberry) lwidth(medthick) || /*
-	*/ spike max_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear42', lcolor(gs8) legend(off) || /*
-	*/ spike min_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear42', lcolor(gs8) legend(off) /*
+	twoway connect firms_banks year if wbcode=="`ctry'" & year>=`=minyear44', lcolor(cranberry) lwidth(medthick) || /*
+	*/ spike max_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear44', lcolor(gs8) legend(off) || /*
+	*/ spike min_firms_banks year if wbcode=="`ctry'" & milestone==1 & year>=`=minyear44', lcolor(gs8) legend(off) /*
 	*/ ytitle("Firms using banks to finance investment (% of firms)") /*
-	*/ title("Firms using banks, `=minyear42'-`=maxyear42'") subtitle("`j'") /*
+	*/ title("Firms using banks, `=minyear44'-`=maxyear44'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators")
 }
 
 * Exporting results into word document
-gr export "$dir\figure42`ctry'_4.png", height(548) width(753) replace
-png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure42`ctry'_4.png") append
+gr export "$dir\figure44`ctry'_4.png", height(548) width(753) replace
+png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure44`ctry'_4.png") append
 
 restore
 
@@ -2428,22 +2557,22 @@ preserve
 * Maximum years
 forval x=2013(-1)1960 {
 	summ year if loggdppc2!=. & firms_banks!=.
-	scalar maxyear43=r(max)
+	scalar maxyear45=r(max)
 	bys year: count if loggdppc2!=. & firms_banks!=.
 	if r(N)>=30 {
-		keep if year==`=maxyear43'
+		keep if year==`=maxyear45'
 	}
 	continue, break
 }
-scalar drop maxyear43
+scalar drop maxyear45
 summ year if wbcode=="`ctry'" & loggdppc2!=. & firms_banks!=.
-scalar maxyear43=r(max)
-local maxyear43: display %9.0f maxyear43
+scalar maxyear45=r(max)
+local maxyear45: display %9.0f maxyear45
 
-drop if year!=`=maxyear43'
+drop if year!=`=maxyear45'
 
-if `=maxyear43'!=. {
-	* Statistics for Figure 43
+if `=maxyear45'!=. {
+	* Statistics for Figure 45
 	* Deciles
 	foreach x in firms_banks loggdppc2 {
 		xtile pct=`x' if `x'!=., nq(10)
@@ -2462,9 +2591,9 @@ if `=maxyear43'!=. {
 		drop rank
 		}
 		
-	* Figure 43
+	* Figure 45
 	lpoly firms_banks loggdppc2, ci at(loggdppc2) gen(pred) se(se) legend(off) /*
-	*/ title("Firms using banks vs. GDP per capita, `=maxyear43'") subtitle("`j'") /*
+	*/ title("Firms using banks vs. GDP per capita, `=maxyear45'") subtitle("`j'") /*
 	*/ note("Data source: World Development Indicators") /*
 	*/ ytitle("Firms using banks to finance investment (% of firms)") xtitle("GDP per capita, PPP (constant 2005 international $), log") /*
 	*/ addplot(scatter firms_banks loggdppc2, mlabsize(vsmall) mcolor(edkblue) mlabcolor(edkblue) || /*
@@ -2472,8 +2601,8 @@ if `=maxyear43'!=. {
 	*/ scatter firms_banks loggdppc2 if wbcode=="`ctry'", mlabel(wbcode) mlabsize(vsmall) mcolor(red) mlabcolor(red) mlabposition(3))
 	
 	* Exporting results into word document
-	gr export "$dir\figure43`ctry'_4.png", height(548) width(753) replace
-	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure43`ctry'_4.png") append
+	gr export "$dir\figure45`ctry'_4.png", height(548) width(753) replace
+	png2rtf using "$dir\analysis`ctry'_4.doc", g("$dir\figure45`ctry'_4.png") append
 	
 	* How many s.d. is the country from the fitted value?
 	gen diff=(firms_banks-pred)/se
@@ -2489,15 +2618,15 @@ restore
 ** RANKINGS, DECILES AND ERROR IN S.E. UNITS **
 ***************************************************
 
-foreach var in credit real_i real_i_m invest_bank_equity workingk_bank finance_constraint net_cash2_m real_i2 real_i2_m debt_y debt_x  s_debt debt_mat c_a /*
-*/ rex_vol spread overhead concentration roa firms_banks {
+foreach var in credit real_i real_i_m invest_bank workingk_bank finance_constraint net_cash2_m real_i2 real_i2_m debt_y debt_x s_debt_r s_debt /*
+*/ debt_mat c_a rex_vol spread overhead concentration roa firms_banks {
 	capture noisily gen rank_`var'=`=rank_`var''
 	capture noisily gen n_`var'=`=n_`var''
 	capture noisily gen pct_`var'=`=pct_`var''
 	capture noisily gen diff_`var'=`=diff_`var''
 }
 
-forval x=1/43 {
+forval x=1/45 {
 	capture noisily gen maxyear`x'=`=maxyear`x''
 }
 
@@ -2535,12 +2664,12 @@ save "temp3.dta", replace
 restore
 
 preserve
-collapse maxyear5 rank_invest_bank_equity n_invest_bank_equity pct_invest_bank_equity diff_invest_bank_equity
+collapse maxyear5 rank_invest_bank n_invest_bank pct_invest_bank diff_invest_bank
 rename maxyear5 year
-rename rank_invest_bank_equity rank
-rename n_invest_bank_equity n
-rename pct_invest_bank_equity decile
-rename diff_invest_bank_equity deviation
+rename rank_invest_bank rank
+rename n_invest_bank n
+rename pct_invest_bank decile
+rename diff_invest_bank deviation
 gen variable=5
 save "temp5.dta", replace
 restore
@@ -2623,127 +2752,139 @@ save "temp21.dta", replace
 restore
 
 preserve
-collapse maxyear23 rank_s_debt n_s_debt pct_s_debt diff_s_debt
+collapse maxyear23 rank_s_debt_r n_s_debt_r pct_s_debt_r diff_s_debt_r
 rename maxyear23 year
-rename rank_s_debt rank
-rename n_s_debt n
-rename pct_s_debt decile
-rename diff_s_debt deviation
+rename rank_s_debt_r rank
+rename n_s_debt_r n
+rename pct_s_debt_r decile
+rename diff_s_debt_r deviation
 gen variable=23
 save "temp23.dta", replace
 restore
 
 preserve
-collapse maxyear27 rank_debt_mat n_debt_mat pct_debt_mat diff_debt_mat
-rename maxyear27 year
+collapse maxyear25 rank_s_debt n_s_debt pct_s_debt diff_s_debt
+rename maxyear25 year
+rename rank_s_debt rank
+rename n_s_debt n
+rename pct_s_debt decile
+rename diff_s_debt deviation
+gen variable=25
+save "temp25.dta", replace
+restore
+
+preserve
+collapse maxyear29 rank_debt_mat n_debt_mat pct_debt_mat diff_debt_mat
+rename maxyear29 year
 rename rank_debt_mat rank
 rename n_debt_mat n
 rename pct_debt_mat decile
 rename diff_debt_mat deviation
-gen variable=27
-save "temp27.dta", replace
-restore
-
-preserve
-collapse maxyear29 rank_c_a n_c_a pct_c_a diff_c_a
-rename maxyear29 year
-rename rank_c_a rank
-rename n_c_a n
-rename pct_c_a decile
-rename diff_c_a deviation
 gen variable=29
 save "temp29.dta", replace
 restore
 
 preserve
-collapse maxyear31 rank_rex_vol n_rex_vol pct_rex_vol diff_rex_vol
+collapse maxyear31 rank_c_a n_c_a pct_c_a diff_c_a
 rename maxyear31 year
-rename rank_rex_vol rank
-rename n_rex_vol n
-rename pct_rex_vol decile
-rename diff_rex_vol deviation
+rename rank_c_a rank
+rename n_c_a n
+rename pct_c_a decile
+rename diff_c_a deviation
 gen variable=31
 save "temp31.dta", replace
 restore
 
 preserve
-collapse maxyear33 rank_spread n_spread pct_spread diff_spread
+collapse maxyear33 rank_rex_vol n_rex_vol pct_rex_vol diff_rex_vol
 rename maxyear33 year
-rename rank_spread rank
-rename n_spread n
-rename pct_spread decile
-rename diff_spread deviation
+rename rank_rex_vol rank
+rename n_rex_vol n
+rename pct_rex_vol decile
+rename diff_rex_vol deviation
 gen variable=33
 save "temp33.dta", replace
 restore
 
 preserve
-collapse maxyear35 rank_overhead n_overhead pct_overhead diff_overhead
+collapse maxyear35 rank_spread n_spread pct_spread diff_spread
 rename maxyear35 year
-rename rank_overhead rank
-rename n_overhead n
-rename pct_overhead decile
-rename diff_overhead deviation
+rename rank_spread rank
+rename n_spread n
+rename pct_spread decile
+rename diff_spread deviation
 gen variable=35
 save "temp35.dta", replace
 restore
 
-if maxyear37!=. {
 preserve
-collapse maxyear37 rank_reserve n_reserve pct_reserve diff_reserve
+collapse maxyear37 rank_overhead n_overhead pct_overhead diff_overhead
 rename maxyear37 year
+rename rank_overhead rank
+rename n_overhead n
+rename pct_overhead decile
+rename diff_overhead deviation
+gen variable=37
+save "temp37.dta", replace
+restore
+
+if maxyear39!=. {
+preserve
+collapse maxyear39 rank_reserve n_reserve pct_reserve diff_reserve
+rename maxyear39 year
 rename rank_reserve rank
 rename n_reserve n
 rename pct_reserve decile
 rename diff_reserve deviation
-gen variable=37
-save "temp37.dta", replace
+gen variable=39
+save "temp39.dta", replace
 restore
 }
 
 preserve
-collapse maxyear39 rank_concentration n_concentration pct_concentration diff_concentration
-rename maxyear39 year
+collapse maxyear41 rank_concentration n_concentration pct_concentration diff_concentration
+rename maxyear41 year
 rename rank_concentration rank
 rename n_concentration n
 rename pct_concentration decile
 rename diff_concentration deviation
-gen variable=39
-save "temp39.dta", replace
-restore
-
-preserve
-collapse maxyear41 rank_roa n_roa pct_roa diff_roa
-rename maxyear41 year
-rename rank_roa rank
-rename n_roa n
-rename pct_roa decile
-rename diff_roa deviation
 gen variable=41
 save "temp41.dta", replace
 restore
 
 preserve
-collapse maxyear43 rank_firms_banks n_firms_banks pct_firms_banks diff_firms_banks
+collapse maxyear43 rank_roa n_roa pct_roa diff_roa
 rename maxyear43 year
-rename rank_firms_banks rank
-rename n_firms_banks n
-rename pct_firms_banks decile
-rename diff_firms_banks deviation
+rename rank_roa rank
+rename n_roa n
+rename pct_roa decile
+rename diff_roa deviation
 gen variable=43
 save "temp43.dta", replace
 restore
 
+preserve
+collapse maxyear45 rank_firms_banks n_firms_banks pct_firms_banks diff_firms_banks
+rename maxyear45 year
+rename rank_firms_banks rank
+rename n_firms_banks n
+rename pct_firms_banks decile
+rename diff_firms_banks deviation
+gen variable=45
+save "temp45.dta", replace
+restore
+
 use "temp1.dta", clear
-forval x=2/43 {
+forval x=2/45 {
 	capture noisily append using "temp`x'.dta"
 }
 
 label def variable 1"Financial depth" 2"Real lending interest rate" 3"Real lending interest rate, 3-year average" 5"Investments financed by banks or equity" /*
 */ 6"Working capital financed by banks" 7"Finance as a major constraint" 10"Net cash flow from banks" 11"Real savings interest rate" /*
-*/ 12"Real savings interest rate, 3-year average" 19"External Debt (% of GNI)" 21"External Debt (% of exports)" 23"Short-term debt" /*
-*/ 27"Average maturity on new external debt" 29"Current account balance" 31"Real exchange rate volatility" 33"Interest rate spread" /*
-*/ 35"Overhead costs of banks" 37"Bank reserves" 39"Bank concentration" 41"Banks ROA" 43"Firms using banks"
+*/ 12"Real savings interest rate, 3-year average" 19"External Debt (% of GNI)" 21"External Debt (% of exports)" /*
+*/ 23"Short-term external debt to reserves" 25"Short-term external debt (% external debt)" /*
+*/ 29"Average maturity on new external debt" 31"Current account balance" 33"Real exchange rate volatility" 35"Interest rate spread" /*
+*/ 37"Overhead costs of banks" 39"Bank reserves" 41"Bank concentration" 43"Banks ROA" 45"Firms using banks"
 label val variable variable
 order variable year
 gen significant=0
@@ -2755,6 +2896,6 @@ export excel using "$dir\table`ctry'4", firstrow(var) sheetreplace
 scalar drop _all
 macro drop _all
 erase "temp.dta"
-forval x=1/43 {
+forval x=1/45 {
 	capture noisily erase "temp`x'.dta"
 }

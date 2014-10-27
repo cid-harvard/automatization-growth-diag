@@ -46,10 +46,10 @@ sort country year
 ** Figure 1: Overall, ten, and five year growth rates **
 ********************************************************
 rename NY_GDP_PCAP_KD gdppc
-gen loggdppc=log10(gdppc)				/* GDP per capita (constant 2005 US$) */
+gen loggdppc=log(gdppc)				/* GDP per capita (constant 2005 US$) */
 label var loggdppc "log(GDPPC)"
 rename NY_GDP_PCAP_PP_KD gdppc2		/* GDP per capita, PPP (constant 2005 international $) */
-gen loggdppc2=log10(gdppc2)
+gen loggdppc2=log(gdppc2)
 label var loggdppc2 "log(GDPPC)"
 label var year "Years"
 * Statistics for Figure 1
@@ -636,7 +636,7 @@ gen g4=100*(((gdppc[_n+7]/gdppc[_n])^(1/7))-1) if wbcode[_n+7]==wbcode[_n]
 * Change in growth rate
 gen delta=g4[_n]-g4[_n-7] if wbcode[_n+7]==wbcode[_n]
 
-* Aceleration
+* Acceleration
 gen accel=0
 replace accel=1 if g4>=3.5 & delta>=2.0 & gdppc[_n+7]>=max(gdppc[_n],gdppc[_n+1],gdppc[_n+2],gdppc[_n+3],gdppc[_n+4],gdppc[_n+5],gdppc[_n+6]) /*
 */ & gdppc[_n+7]!=. & gdppc[_n]!=.
